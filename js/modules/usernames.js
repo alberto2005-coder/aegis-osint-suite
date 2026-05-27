@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const statScanned = document.getElementById('stat-scanned');
   const statFound = document.getElementById('stat-found');
   const statErrors = document.getElementById('stat-errors');
+  const btnStopUsername = document.getElementById('btn-stop-username');
+  let currentEventSource = null;
 
   // Recuperar proxy guardado
   const customProxyInput = document.getElementById('username-custom-proxy');
@@ -216,6 +218,10 @@ document.addEventListener('DOMContentLoaded', () => {
       renderFilteredResults();
       updateStats();
 
+      if (btnStopUsername) {
+        btnStopUsername.style.display = 'inline-flex';
+      }
+
       // 2. Iniciar conexión SSE con el backend de Sherlock
       const useTor = (window.isTorActive?.() || document.getElementById('username-use-tor')?.checked) ? 'true' : 'false';
       const customProxy = customProxyInput ? customProxyInput.value.trim() : '';
@@ -223,9 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('username_custom_proxy', customProxy);
       }
       let isFinished = false;
-      const eventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}&useTor=${useTor}&proxy=${encodeURIComponent(customProxy)}`);
+      currentEventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}&useTor=${useTor}&proxy=${encodeURIComponent(customProxy)}`);
 
-      eventSource.onmessage = (event) => {
+      currentEventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
 
@@ -263,7 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (data.status === 'done') {
             isFinished = true;
-            eventSource.close();
+            if (currentEventSource) {
+              currentEventSource.close();
+              currentEventSource = null;
+            }
 
             // Marcar cualquier plataforma base que siga en "Buscando..." como "No Encontrado"
             currentUsernameResults.forEach(r => {
@@ -276,16 +285,22 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStats();
             btnScanUsername.disabled = false;
             btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
+            if (btnStopUsername) {
+              btnStopUsername.style.display = 'none';
+            }
           }
         } catch (err) {
           console.error("Error parseando mensaje de Sherlock:", err);
         }
       };
 
-      eventSource.onerror = (err) => {
+      currentEventSource.onerror = (err) => {
         if (isFinished) return;
         console.error("Error en conexión EventSource con Sherlock:", err);
-        eventSource.close();
+        if (currentEventSource) {
+          currentEventSource.close();
+          currentEventSource = null;
+        }
 
         // Si falla la conexión, marcamos las pendientes como omitidas
         currentUsernameResults.forEach(r => {
@@ -298,9 +313,31 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStats();
         btnScanUsername.disabled = false;
         btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
+        if (btnStopUsername) {
+          btnStopUsername.style.display = 'none';
+        }
       };
 
       if (window.osintSaveHistory) window.osintSaveHistory('username', username);
+    });
+  }
+
+  if (btnStopUsername) {
+    btnStopUsername.addEventListener('click', () => {
+      if (currentEventSource) {
+        currentEventSource.close();
+        currentEventSource = null;
+      }
+      currentUsernameResults.forEach(r => {
+        if (r.status.includes('🔍')) {
+          r.status = '❌ Detenido';
+        }
+      });
+      renderFilteredResults();
+      updateStats();
+      btnScanUsername.disabled = false;
+      btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
+      btnStopUsername.style.display = 'none';
     });
   }
 

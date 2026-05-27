@@ -230,8 +230,8 @@ app.all('/proxy.php', async (req, res) => {
 
     try {
       // Trigger scan
-      await axios.post(`https://observatory.mozilla.org/api/v1/analyze/?host=${domain}&hidden=true&rescan=false`, {}, { timeout: 6000 }).catch(() => {});
-      
+      await axios.post(`https://observatory.mozilla.org/api/v1/analyze/?host=${domain}&hidden=true&rescan=false`, {}, { timeout: 6000 }).catch(() => { });
+
       // Wait
       await new Promise(r => setTimeout(r, 1500));
 
@@ -313,7 +313,7 @@ app.all('/proxy.php', async (req, res) => {
       const respTime = Date.now() - t0;
 
       const headers = response.headers;
-      
+
       // Cabeceras de seguridad
       const secChecks = {
         'strict-transport-security': { name: 'HSTS', desc: 'Fuerza HTTPS en el navegador', severity: 'high' },
@@ -375,11 +375,10 @@ app.all('/proxy.php', async (req, res) => {
   // ── ACCIÓN: groq ──────────────────────────────────────────
   if (action === 'groq') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Usa POST para Groq' });
-    
+
     const base64Image = req.body.image;
     if (!base64Image) return res.status(400).json({ error: 'Falta campo image' });
 
-    // El API key se puede pasar como variable de entorno en Render (GROQ_API_KEY)
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return res.status(400).json({ error: { message: 'Clave API de Groq no configurada en Render' } });
 
@@ -408,10 +407,10 @@ app.all('/proxy.php', async (req, res) => {
       return res.status(500).json({ error: { message: msg } });
     }
   }
+});
 // Servir archivos estáticos del frontend
 app.use(express.static(__dirname));
 
-// Servir la app principal por defecto en cualquier otra ruta
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

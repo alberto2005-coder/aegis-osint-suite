@@ -4,7 +4,8 @@
   "description": "OSINT Suite with Tor routing",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "axios": "^1.6.8",

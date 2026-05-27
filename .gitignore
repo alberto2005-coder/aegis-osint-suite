@@ -5,3 +5,4 @@ proxies_cache.txt
 .gemini/
 *cache*
 package-lock.json
+FUTURE_IMPLEMENTATIONS.md

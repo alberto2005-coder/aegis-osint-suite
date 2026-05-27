@@ -8,21 +8,38 @@ const dnsPromises = require('dns').promises;
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const { spawn } = require('child_process');
 
-function isPrivateIP(ip) {
-  if (!ip) return true;
-  // IPv4 Loopback, Private, Link-Local, Multicast, 0.0.0.0
-  if (ip.startsWith('127.') || ip.startsWith('10.') || ip.startsWith('169.254.') || ip.startsWith('0.')) return true;
-  if (ip.startsWith('192.168.')) return true;
-  const parts = ip.split('.');
-  if (parts.length === 4) {
-    const first = parseInt(parts[0]);
-    const second = parseInt(parts[1]);
-    if (first === 172 && second >= 16 && second <= 31) return true;
+// Nuevas dependencias de seguridad y optimización
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const ipaddr = require('ipaddr.js');
+const InputValidator = require('./utils/validation');
+
+function isPrivateIP(ipString) {
+  try {
+    if (!ipString) return true;
+    
+    // Normalizar direcciones IPv4 mapeadas en IPv6 (ej. ::ffff:127.0.0.1)
+    let addr = ipaddr.parse(ipString);
+    if (addr.kind() === 'ipv6' && addr.isIPv4MappedAddress()) {
+      addr = addr.toIPv4Address();
+    }
+    
+    const range = addr.range();
+    const privateRanges = [
+      'unspecified',
+      'broadcast',
+      'multicast',
+      'linkLocal',
+      'loopback',
+      'private',
+      'uniqueLocal'
+    ];
+    return privateRanges.includes(range);
+  } catch (err) {
+    // Si no se puede analizar, considerarla privada/insegura por defecto
+    return true;
   }
-  // IPv6
-  const ipLower = ip.toLowerCase();
-  if (ipLower === '::1' || ipLower.startsWith('fe80:') || ipLower.startsWith('fc00:') || ipLower.startsWith('fd00:')) return true;
-  return false;
 }
 
 async function validateTargetHost(host) {
@@ -52,7 +69,46 @@ const PORT = process.env.PORT || 3000;
 // Configurar Tor agent (SOCKS5 local)
 const torAgent = new SocksProxyAgent('socks://127.0.0.1:9050');
 
-app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false // Deshabilitar CSP para permitir scripts externos de CDNs sin problemas
+}));
+app.use(compression());
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    try {
+      const parsedOrigin = new URL(origin);
+      const hostname = parsedOrigin.hostname;
+      if (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        allowedOrigins.includes(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('No permitido por la política CORS de Aegis'));
+      }
+    } catch (_) {
+      callback(new Error('Origen CORS no válido'));
+    }
+  },
+  credentials: true
+}));
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Máximo 100 peticiones
+  message: { error: 'Demasiadas peticiones desde esta IP, por favor inténtalo de nuevo más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use(globalLimiter);
+
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
@@ -194,15 +250,23 @@ async function checkDevTo(username) {
 }
 
 // ── ENDPOINT: /api/sherlock (Server-Sent Events) ───────────
-app.get('/api/sherlock', (req, res) => {
+const sherlockLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 10, // Máximo 10 peticiones por minuto
+  message: { error: 'Límite de escaneo excedido. Por favor espera un minuto antes de escanear otra vez.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.get('/api/sherlock', sherlockLimiter, (req, res) => {
   const username = req.query.username;
   const useTor = req.query.useTor === 'true';
   const customProxy = req.query.proxy || '';
 
   if (!username) return res.status(400).json({ error: 'Username es requerido' });
 
-  // Validar username básico para evitar inyección de comandos
-  if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) {
+  // Validar username usando la clase InputValidator para prevenir inyecciones
+  if (!InputValidator.validateUsername(username)) {
     return res.status(400).json({ error: 'Username contiene caracteres inválidos' });
   }
 
@@ -766,6 +830,14 @@ app.use(express.static(__dirname));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Interceptor global de errores (Evita leakage de stack traces)
+app.use((err, req, res, next) => {
+  console.error('[Error Global Interceptado]:', err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Ha ocurrido un error interno en el servidor.' });
+  }
 });
 
 app.listen(PORT, () => {

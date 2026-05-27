@@ -190,6 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Validación sintáctica en frontend (mismos criterios que el backend)
+      if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) {
+        alert('El nombre de usuario contiene caracteres no válidos. Solo se permiten letras, números, guiones, guiones bajos y puntos.');
+        return;
+      }
+
       const platformsToScan = activeCategory === 'all'
         ? PLATFORMS
         : PLATFORMS.filter(p => p.category === activeCategory);

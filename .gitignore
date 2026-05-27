@@ -4,3 +4,4 @@ proxies_cache.txt
 .env
 .gemini/
 *cache*
+package-lock.json

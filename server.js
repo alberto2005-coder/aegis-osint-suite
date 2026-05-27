@@ -238,6 +238,10 @@ app.get('/api/sherlock', (req, res) => {
     });
 
     proc.on('close', (code) => {
+      if (proc.hasErrored) {
+        console.log(`[Sherlock Node] Ignorando cierre de proceso fallido.`);
+        return;
+      }
       console.log(`[Sherlock Node] Escaneo terminado con código: ${code}`);
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
@@ -251,11 +255,13 @@ app.get('/api/sherlock', (req, res) => {
     sherlockProcess = spawn('sherlock', args);
 
     sherlockProcess.on('error', (err) => {
+      sherlockProcess.hasErrored = true;
       console.warn("Comando 'sherlock' directo falló, intentando fallback con 'python3 -m sherlock'...", err.message);
       try {
         const fallbackProcess = spawn('python3', ['-m', 'sherlock'].concat(args));
         setupProcessHandlers(fallbackProcess);
         fallbackProcess.on('error', (fallbackErr) => {
+          fallbackProcess.hasErrored = true;
           console.error("Fallo absoluto en el fallback de Sherlock:", fallbackErr);
           if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);

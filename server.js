@@ -111,55 +111,67 @@ app.get('/api/sherlock', (req, res) => {
 
   console.log(`[Sherlock Node] Iniciando escaneo de: ${username} (Usando Tor: ${useTor}, Proxy: ${customProxy || 'Ninguno'})`);
 
-  const args = ['/usr/src/sherlock/sherlock/sherlock.py', username, '--timeout', '5', '--print-found'];
+  const args = [username, '--timeout', '5', '--print-found'];
   if (customProxy) {
     args.push('--proxy', customProxy);
   } else if (useTor) {
     args.push('--proxy', 'socks5://127.0.0.1:9050');
   }
 
-  let sherlockProcess;
-  try {
-    sherlockProcess = spawn('python3', args);
-  } catch (err) {
-    console.error("Fallo al iniciar el proceso de Sherlock:", err);
-    res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
-    res.end();
-    return;
-  }
-
-  sherlockProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    const lines = output.split('\n');
-    for (const line of lines) {
-      const cleanLine = line.trim();
-      if (cleanLine.startsWith('[+]')) {
-        // Encontrado: [+] PlatformName: URL
-        const match = cleanLine.match(/^\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
-        if (match) {
-          const platform = match[1].trim();
-          const url = match[2].trim();
-          res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+  function setupProcessHandlers(proc) {
+    proc.stdout.on('data', (data) => {
+      const output = data.toString();
+      const lines = output.split('\n');
+      for (const line of lines) {
+        const cleanLine = line.trim();
+        if (cleanLine.startsWith('[+]')) {
+          const match = cleanLine.match(/^\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
+          if (match) {
+            const platform = match[1].trim();
+            const url = match[2].trim();
+            res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+          }
         }
       }
-    }
-  });
+    });
 
-  sherlockProcess.stderr.on('data', (data) => {
-    console.error(`[Sherlock Error]: ${data.toString()}`);
-  });
+    proc.stderr.on('data', (data) => {
+      console.error(`[Sherlock Error]: ${data.toString()}`);
+    });
 
-  sherlockProcess.on('close', (code) => {
-    console.log(`[Sherlock Node] Escaneo terminado con código: ${code}`);
-    res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
-    res.end();
-  });
+    proc.on('close', (code) => {
+      console.log(`[Sherlock Node] Escaneo terminado con código: ${code}`);
+      res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
+      res.end();
+    });
+  }
 
-  sherlockProcess.on('error', (err) => {
-    console.error("Error en ejecución del proceso de Sherlock:", err);
+  let sherlockProcess;
+  try {
+    sherlockProcess = spawn('sherlock', args);
+
+    sherlockProcess.on('error', (err) => {
+      console.warn("Comando 'sherlock' directo falló, intentando fallback con 'python3 -m sherlock'...", err.message);
+      try {
+        const fallbackProcess = spawn('python3', ['-m', 'sherlock'].concat(args));
+        setupProcessHandlers(fallbackProcess);
+        fallbackProcess.on('error', (fallbackErr) => {
+          console.error("Fallo absoluto en el fallback de Sherlock:", fallbackErr);
+          res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);
+          res.end();
+        });
+      } catch (fallbackErr) {
+        res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);
+        res.end();
+      }
+    });
+
+    setupProcessHandlers(sherlockProcess);
+  } catch (err) {
+    console.error("Error síncrono al iniciar Sherlock:", err);
     res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
     res.end();
-  });
+  }
 });
 
 // Interceptor de proxy.php para no tener que modificar rutas en JS

@@ -124,3 +124,11 @@ Para garantizar estabilidad operativa y evitar superar límites de memoria en se
 * **Front-End**: HTML5 / CSS3 (diseño glassmorphism responsivo), JavaScript Vanilla, Leaflet.js (mapeado de geolocalización), jsPDF (generación de informes).
 * **Back-End**: Node.js, Express, Axios.
 * **Criptografia**: Web Crypto API (SubtleCrypto para AES-GCM), Canvas API (lectura/escritura de canales RGB para esteganografía LSB).
+
+---
+
+## Descargo de Responsabilidad
+
+Este proyecto ha sido desarrollado con fines exclusivamente educativos, de aprendizaje y de auditoría de seguridad personal (autorizada). El uso de esta herramienta para realizar actividades maliciosas, espionaje, acoso o accesos no autorizados a sistemas de terceros está estrictamente prohibido y puede ser constitutivo de delito penal. 
+
+El creador de esta herramienta no se hace responsable del uso indebido, ilegal o negligente que terceras personas puedan hacer de este software. La responsabilidad recae única y exclusivamente sobre el usuario final.

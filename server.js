@@ -90,6 +90,70 @@ function getSSLCert(host) {
   });
 }
 
+// Funciones auxiliares para verificar APIs públicas directas sin CORS/Bloqueos de cloud
+async function checkGithub(username) {
+  try {
+    const res = await axios.get(`https://api.github.com/users/${username}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 3000
+    });
+    if (res.status === 200) return `https://github.com/${username}`;
+  } catch (e) {
+    if (e.response?.status === 404) return null;
+  }
+  return null;
+}
+
+async function checkChess(username) {
+  try {
+    const res = await axios.get(`https://api.chess.com/pub/player/${username}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 3000
+    });
+    if (res.status === 200) return `https://www.chess.com/member/${username}`;
+  } catch (e) {
+    if (e.response?.status === 404) return null;
+  }
+  return null;
+}
+
+async function checkKeybase(username) {
+  try {
+    const res = await axios.get(`https://keybase.io/_/api/1.0/user/lookup.json?usernames=${username}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 3000
+    });
+    if (res.data?.them && res.data.them.length > 0 && res.data.them[0] !== null) {
+      return `https://keybase.io/${username}`;
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function checkGravatar(username) {
+  try {
+    const res = await axios.get(`https://en.gravatar.com/${username}.json`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 3000
+    });
+    if (res.status === 200) return `https://en.gravatar.com/${username}`;
+  } catch (e) {
+    if (e.response?.status === 404) return null;
+  }
+  return null;
+}
+
+async function checkDevTo(username) {
+  try {
+    const res = await axios.get(`https://dev.to/api/users/by_username?url=${username}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 3000
+    });
+    if (res.data && res.data.username) return `https://dev.to/${username}`;
+  } catch (e) {}
+  return null;
+}
+
 // ── ENDPOINT: /api/sherlock (Server-Sent Events) ───────────
 app.get('/api/sherlock', (req, res) => {
   const username = req.query.username;
@@ -111,6 +175,26 @@ app.get('/api/sherlock', (req, res) => {
 
   console.log(`[Sherlock Node] Iniciando escaneo de: ${username} (Usando Tor: ${useTor}, Proxy: ${customProxy || 'Ninguno'})`);
 
+  const foundFastPlatforms = new Set();
+
+  // Lanzar consultas de APIs rápidas en paralelo
+  const fastAPIs = [
+    { platform: 'GitHub', fn: () => checkGithub(username) },
+    { platform: 'Chess.com', fn: () => checkChess(username) },
+    { platform: 'Keybase', fn: () => checkKeybase(username) },
+    { platform: 'Gravatar', fn: () => checkGravatar(username) },
+    { platform: 'Dev.to', fn: () => checkDevTo(username) }
+  ];
+
+  fastAPIs.forEach(item => {
+    item.fn().then(url => {
+      if (url && !res.writableEnded) {
+        foundFastPlatforms.add(item.platform.toLowerCase());
+        res.write(`data: ${JSON.stringify({ status: 'found', platform: item.platform, url })}\n\n`);
+      }
+    }).catch(() => {});
+  });
+
   const args = [username, '--timeout', '5', '--print-found'];
   if (customProxy) {
     args.push('--proxy', customProxy);
@@ -129,7 +213,12 @@ app.get('/api/sherlock', (req, res) => {
           if (match) {
             const platform = match[1].trim();
             const url = match[2].trim();
-            res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+            const platKey = platform.toLowerCase();
+            
+            // Solo enviar si no lo ha detectado ya nuestra consulta rápida de API
+            if (!foundFastPlatforms.has(platKey) && !res.writableEnded) {
+              res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+            }
           }
         }
       }
@@ -141,8 +230,10 @@ app.get('/api/sherlock', (req, res) => {
 
     proc.on('close', (code) => {
       console.log(`[Sherlock Node] Escaneo terminado con código: ${code}`);
-      res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
-      res.end();
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
+        res.end();
+      }
     });
   }
 
@@ -157,20 +248,26 @@ app.get('/api/sherlock', (req, res) => {
         setupProcessHandlers(fallbackProcess);
         fallbackProcess.on('error', (fallbackErr) => {
           console.error("Fallo absoluto en el fallback de Sherlock:", fallbackErr);
-          res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);
-          res.end();
+          if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);
+            res.end();
+          }
         });
       } catch (fallbackErr) {
-        res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);
-        res.end();
+        if (!res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ status: 'error', message: fallbackErr.message })}\n\n`);
+          res.end();
+        }
       }
     });
 
     setupProcessHandlers(sherlockProcess);
   } catch (err) {
     console.error("Error síncrono al iniciar Sherlock:", err);
-    res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
-    res.end();
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
+      res.end();
+    }
   }
 });
 

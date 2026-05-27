@@ -214,6 +214,12 @@ app.get('/api/sherlock', (req, res) => {
 
   let currentChild = null;
 
+  const heartbeatInterval = setInterval(() => {
+    if (!res.writableEnded) {
+      res.write(': heartbeat\n\n');
+    }
+  }, 15000);
+
   const watchdogTimeout = setTimeout(() => {
     if (currentChild) {
       try {
@@ -221,6 +227,7 @@ app.get('/api/sherlock', (req, res) => {
       } catch (e) {
         console.error("[Sherlock Watchdog Error]:", e);
       }
+      clearInterval(heartbeatInterval);
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify({ status: 'error', message: 'Tiempo de escaneo excedido (120s)' })}\n\n`);
         res.end();
@@ -230,6 +237,7 @@ app.get('/api/sherlock', (req, res) => {
 
   req.on('close', () => {
     clearTimeout(watchdogTimeout);
+    clearInterval(heartbeatInterval);
     if (currentChild) {
       try {
         currentChild.kill('SIGTERM');
@@ -303,6 +311,7 @@ app.get('/api/sherlock', (req, res) => {
 
     proc.on('close', (code) => {
       clearTimeout(watchdogTimeout);
+      clearInterval(heartbeatInterval);
       if (proc.hasErrored) {
         return;
       }
@@ -573,13 +582,13 @@ app.all('/proxy.php', async (req, res) => {
 
     try {
       // Trigger scan
-      await axios.post(`https://observatory.mozilla.org/api/v1/analyze/?host=${domain}&hidden=true&rescan=false`, {}, { timeout: 6000 }).catch(() => { });
+      await axios.post(`https://observatory.mozilla.org/api/v1/analyze?host=${domain}&hidden=true&rescan=false`, {}, { timeout: 6000 }).catch(() => { });
 
       // Wait
       await new Promise(r => setTimeout(r, 1500));
 
       // Get scan
-      const resObs = await axios.get(`https://observatory.mozilla.org/api/v1/analyze/?host=${domain}`, { timeout: 6000 });
+      const resObs = await axios.get(`https://observatory.mozilla.org/api/v1/analyze?host=${domain}`, { timeout: 6000 });
       const data = resObs.data;
 
       if (data && data.scan_id) {

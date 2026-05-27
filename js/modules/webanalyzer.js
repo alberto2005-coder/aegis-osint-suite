@@ -450,9 +450,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // 2. Fallback: llamada directa (puede dar CORS si Mozilla tiene bloqueos de cabecera)
-      await fetch(`https://observatory.mozilla.org/api/v1/analyze/?host=${domain}&hidden=true&rescan=false`, { method: 'POST' }).catch(() => {});
+      await fetch(`https://observatory.mozilla.org/api/v1/analyze?host=${domain}&hidden=true&rescan=false`, { method: 'POST' }).catch(() => {});
       await new Promise(r => setTimeout(r, 2500));
-      const res = await fetch(`https://observatory.mozilla.org/api/v1/analyze/?host=${domain}`);
+      const res = await fetch(`https://observatory.mozilla.org/api/v1/analyze?host=${domain}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const testsRes = await fetch(`https://observatory.mozilla.org/api/v1/getScanResults?scan=${data.scan_id}`).catch(() => null);

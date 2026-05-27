@@ -173,7 +173,32 @@ app.get('/api/sherlock', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  console.log(`[Sherlock Node] Iniciando escaneo de: ${username} (Usando Tor: ${useTor}, Proxy: ${customProxy || 'Ninguno'})`);
+  let currentChild = null;
+
+  const watchdogTimeout = setTimeout(() => {
+    if (currentChild) {
+      try {
+        currentChild.kill('SIGKILL');
+      } catch (e) {
+        console.error("[Sherlock Watchdog Error]:", e);
+      }
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ status: 'error', message: 'Tiempo de escaneo excedido (120s)' })}\n\n`);
+        res.end();
+      }
+    }
+  }, 120000);
+
+  req.on('close', () => {
+    clearTimeout(watchdogTimeout);
+    if (currentChild) {
+      try {
+        currentChild.kill('SIGTERM');
+      } catch (e) {
+        console.error("[Sherlock Cleanup Error on Disconnect]:", e);
+      }
+    }
+  });
 
   const foundFastPlatforms = new Set();
 
@@ -238,11 +263,10 @@ app.get('/api/sherlock', (req, res) => {
     });
 
     proc.on('close', (code) => {
+      clearTimeout(watchdogTimeout);
       if (proc.hasErrored) {
-        console.log(`[Sherlock Node] Ignorando cierre de proceso fallido.`);
         return;
       }
-      console.log(`[Sherlock Node] Escaneo terminado con código: ${code}`);
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
         res.end();
@@ -253,12 +277,14 @@ app.get('/api/sherlock', (req, res) => {
   let sherlockProcess;
   try {
     sherlockProcess = spawn('sherlock', args);
+    currentChild = sherlockProcess;
 
     sherlockProcess.on('error', (err) => {
       sherlockProcess.hasErrored = true;
       console.warn("Comando 'sherlock' directo falló, intentando fallback con 'python3 -m sherlock'...", err.message);
       try {
         const fallbackProcess = spawn('python3', ['-m', 'sherlock'].concat(args));
+        currentChild = fallbackProcess;
         setupProcessHandlers(fallbackProcess);
         fallbackProcess.on('error', (fallbackErr) => {
           fallbackProcess.hasErrored = true;

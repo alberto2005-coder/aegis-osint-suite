@@ -74,13 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnAnalyzeHeaders) {
     btnAnalyzeHeaders.addEventListener('click', () => {
-      const rawHeaders = headerInput.value.trim();
-      if (!rawHeaders) {
-        alert('Por favor pega las cabeceras del correo.');
-        return;
-      }
+      try {
+        const rawHeaders = headerInput.value.trim();
+        if (!rawHeaders) {
+          alert('Por favor pega las cabeceras del correo.');
+          return;
+        }
 
-      window.showLoader('Analizando cabeceras...');
+        window.showLoader('Analizando cabeceras...');
 
       // ── Campos básicos ──────────────────────────────────────────────────
       const from    = extractField(rawHeaders, 'From', 'de');
@@ -212,17 +213,58 @@ document.addEventListener('DOMContentLoaded', () => {
             : 'No se encontraron saltos de servidor Received.'
           }</p>`;
       } else {
-        receivedHeaders.forEach((hop, idx) => {
+        const timeline = document.createElement('div');
+        timeline.className = 'smtp-hops-timeline';
+        timeline.style.cssText = 'position:relative; padding-left:25px; margin: 15px 0;';
+
+        const line = document.createElement('div');
+        line.style.cssText = 'position:absolute; left:9px; top:10px; bottom:15px; width:2px; background:linear-gradient(to bottom, var(--success-color, #10b981), var(--cyan-color, #06b6d4), var(--error-color, #ef4444));';
+        timeline.appendChild(line);
+
+        // Los saltos se procesan en orden cronológico (de origen a destino)
+        // receivedHeaders[length - 1] es el origen (primer salto)
+        // receivedHeaders[0] es el destino final (último salto)
+        const chronologicalHops = [...receivedHeaders].reverse();
+
+        chronologicalHops.forEach((hop, idx) => {
+          const hopNum = idx + 1;
+          const isOrigin = idx === 0;
+          const isDest = idx === chronologicalHops.length - 1;
+          
           const ipM = hop.match(ipRegex);
-          const ipTag = ipM
-            ? `<span style="color:var(--cyan-color);font-weight:600;"> [${ipM[0]}]</span>`
-            : '';
+          const ipAddress = ipM ? ipM[0] : '';
+          
+          const color = isOrigin ? '#ef4444' : (isDest ? '#10b981' : '#06b6d4');
+          
           const item = document.createElement('div');
-          item.className = 'dns-record-badge';
-          item.style.fontSize = '0.8rem';
-          item.innerHTML = `<strong style="color:var(--cyan-color);">Salto #${receivedHeaders.length - idx}:</strong>${ipTag} ${hop.substring(0, 130)}`;
-          headerHopsList.appendChild(item);
+          item.className = 'smtp-hop-node';
+          item.style.cssText = 'position:relative; margin-bottom:20px;';
+          
+          item.innerHTML = `
+            <div style="position:absolute; left:-21px; top:15px; width:12px; height:12px; border-radius:50%; background:${color}; border:2px solid #0f172a; box-shadow:0 0 8px ${color}; z-index:2;"></div>
+            
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:0.8rem 1rem; transition:transform 0.2s, background-color 0.2s;" class="hover-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <span style="font-weight:700; color:var(--cyan-color); font-size:0.85rem;">
+                  SALTO #${hopNum} ${isOrigin ? '<span class="badge badge-error" style="font-size:0.65rem;margin-left:4px;">ORIGEN</span>' : (isDest ? '<span class="badge badge-success" style="font-size:0.65rem;margin-left:4px;">DESTINO</span>' : '')}
+                </span>
+                ${ipAddress ? `
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-family:monospace; font-size:0.8rem; background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2); padding:1px 6px; border-radius:4px; color:var(--cyan-color);">${ipAddress}</span>
+                    <a href="https://ipinfo.io/${ipAddress}" target="_blank" style="color:var(--text-muted); font-size:0.75rem;" title="Analizar IP"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                  </div>
+                ` : '<span style="color:var(--text-muted); font-size:0.75rem; font-style:italic;">IP no detectada</span>'}
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-secondary); margin:0.4rem 0 0; line-height:1.4; overflow-wrap:break-word; word-break:break-all;">
+                ${hop.substring(0, 220)}
+              </p>
+            </div>
+          `;
+          timeline.appendChild(item);
         });
+        
+        headerHopsList.appendChild(timeline);
+      }
 
         // ── Mapa de ruta de IPs ───────────────────────────────────────────
         const hopIPs = receivedHeaders
@@ -285,10 +327,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           }
         }
-      }
 
-      headerResultsContainer.style.display = 'block';
-      window.hideLoader();
+        headerResultsContainer.style.display = 'block';
+        window.hideLoader();
+      } catch (err) {
+        console.error("Error al analizar cabeceras de correo:", err);
+        window.hideLoader();
+        alert("Ocurrió un error al procesar las cabeceras del correo.");
+      }
     });
   }
 });

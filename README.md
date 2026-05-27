@@ -4,17 +4,17 @@ Aegis es una suite de herramientas web para realizar reconocimiento pasivo (OSIN
 
 ---
 
-## Índice
-1. [Características](#caracteristicas)
-2. [Instalación Local](#instalacion-local)
-3. [Uso con Docker](#docker)
-4. [Despliegue en Servidores / Nube](#despliegue)
-5. [Gestión de Procesos y Watchdog](#gestion-de-procesos)
-6. [Stack Tecnológico](#stack)
+## Indice
+1. [Caracteristicas](#caracteristicas)
+2. [Instalacion Local](#instalacion-local)
+3. [Uso con Docker](#uso-con-docker)
+4. [Despliegue en la Nube](#despliegue-en-la-nube)
+5. [Gestion de Recursos](#gestion-de-recursos)
+6. [Stack Tecnologico](#stack-tecnologico)
 
 ---
 
-## <a name="caracteristicas"></a>Características
+## Caracteristicas
 
 La suite incluye las siguientes herramientas accesibles desde el panel lateral:
 
@@ -34,7 +34,7 @@ La suite incluye las siguientes herramientas accesibles desde el panel lateral:
 
 ---
 
-## <a name="instalacion-local"></a>Instalación Local
+## Instalacion Local
 
 ### Requisitos
 * **Node.js** (v18+)
@@ -58,7 +58,7 @@ La suite incluye las siguientes herramientas accesibles desde el panel lateral:
 
 ---
 
-## <a name="docker"></a>Uso con Docker
+## Uso con Docker
 
 El proyecto incluye un `Dockerfile` que empaqueta todo el entorno (incluyendo el servicio de Tor y Sherlock en Python).
 
@@ -74,7 +74,7 @@ El proyecto incluye un `Dockerfile` que empaqueta todo el entorno (incluyendo el
 
 ---
 
-## <a name="despliegue"></a>Despliegue en Servidores / Nube
+## Despliegue en la Nube
 
 La aplicación escucha en el puerto definido por la variable de entorno `PORT` (`process.env.PORT || 3000`), lo que facilita su despliegue en múltiples servicios.
 
@@ -83,7 +83,7 @@ Conecta tu repositorio de GitHub al servicio y define:
 * **Entorno**: Node.js
 * **Build Command**: `npm install`
 * **Start Command**: `npm start`
-* *Nota*: Si la plataforma admite despliegues con Docker, selecciona usar el `Dockerfile` para tener Tor y Sherlock preconfigurados de forma nativa en el contenedor.
+* **Nota**: Si la plataforma admite despliegues con Docker, selecciona usar el `Dockerfile` para tener Tor y Sherlock preconfigurados de forma nativa en el contenedor.
 
 ### 2. Servidor VPS (Ubuntu/Debian) usando PM2
 Si quieres montar la app en tu propio servidor:
@@ -104,7 +104,7 @@ pm2 startup
 
 ---
 
-## <a name="gestion-de-procesos"></a>Gestión de Procesos y Watchdog
+## Gestion de Recursos
 
 Para evitar bloqueos y no exceder límites de consumo de recursos en servidores en la nube (como el límite de 512MB de RAM en cuentas gratuitas):
 
@@ -113,7 +113,7 @@ Para evitar bloqueos y no exceder límites de consumo de recursos en servidores 
 
 ---
 
-## <a name="stack"></a>Stack Tecnológico
+## Stack Tecnologico
 
 * **Front-End**: HTML5, CSS (diseño responsivo oscuro con estética glassmorphism), JS Vanilla, Leaflet.js (mapas), FontAwesome 6, jsPDF.
 * **Back-End**: Node.js, Express, Axios.

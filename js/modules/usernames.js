@@ -240,6 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Si es una de las plataformas de la lista base, la actualizamos
             if (platformRows[platName]) {
+              // Si ya había sido actualizada por la API rápida, evitamos duplicar la lógica
+              if (platformRows[platName].updated) return;
+              
               platformRows[platName].statusSpan.className = 'badge badge-success';
               platformRows[platName].statusSpan.textContent = '✅ Encontrado';
               platformRows[platName].updated = true;
@@ -261,17 +264,39 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUsernameResults.push(resultObj);
             foundCount++;
             statFound.textContent = foundCount;
+            statScanned.textContent = currentUsernameResults.length;
+          }
+
+          if (data.status === 'not_found') {
+            const platName = data.platform.toLowerCase();
+            if (platformRows[platName] && !platformRows[platName].updated) {
+              platformRows[platName].statusSpan.className = 'badge badge-error';
+              platformRows[platName].statusSpan.textContent = '❌ No Encontrado';
+              platformRows[platName].updated = true;
+
+              currentUsernameResults.push({
+                platform: platformRows[platName].element.querySelector('strong').textContent.replace(platformRows[platName].icon, '').trim(),
+                category: platformRows[platName].category,
+                url: platformRows[platName].url,
+                status: '❌ No Encontrado',
+                method: 'Sherlock OSINT',
+                icon: platformRows[platName].icon
+              });
+
+              statScanned.textContent = currentUsernameResults.length;
+            }
           }
 
           if (data.status === 'done') {
             isFinished = true;
             eventSource.close();
 
-            // 3. Todo lo que no se haya encontrado, se marca como No Encontrado
+            // 3. Todo lo que no se haya encontrado ni reportado por Sherlock, se marca como No Encontrado
             Object.keys(platformRows).forEach(key => {
               if (!platformRows[key].updated) {
                 platformRows[key].statusSpan.className = 'badge badge-error';
                 platformRows[key].statusSpan.textContent = '❌ No Encontrado';
+                platformRows[key].updated = true;
                 
                 currentUsernameResults.push({
                   platform: key.charAt(0).toUpperCase() + key.slice(1),

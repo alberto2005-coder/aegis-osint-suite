@@ -195,7 +195,7 @@ app.get('/api/sherlock', (req, res) => {
     }).catch(() => {});
   });
 
-  const args = [username, '--timeout', '5', '--print-found'];
+  const args = [username, '--timeout', '5', '--print-all', '--no-color'];
   if (customProxy) {
     args.push('--proxy', customProxy);
   } else if (useTor) {
@@ -218,6 +218,15 @@ app.get('/api/sherlock', (req, res) => {
             // Solo enviar si no lo ha detectado ya nuestra consulta rápida de API
             if (!foundFastPlatforms.has(platKey) && !res.writableEnded) {
               res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+            }
+          }
+        } else if (cleanLine.startsWith('[-]')) {
+          const match = cleanLine.match(/^\[-\]\s+([^:]+):/);
+          if (match) {
+            const platform = match[1].trim();
+            const platKey = platform.toLowerCase();
+            if (!foundFastPlatforms.has(platKey) && !res.writableEnded) {
+              res.write(`data: ${JSON.stringify({ status: 'not_found', platform })}\n\n`);
             }
           }
         }

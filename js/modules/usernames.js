@@ -131,9 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
               if (res.ok) {
                 data = await res.json();
               } else {
+                console.error(`[Aegis Proxy] proxy.php retornó un status incorrecto: ${res.status} para ${platform.name}`);
                 useFallback = true;
               }
             } catch (e) {
+              console.error(`[Aegis Proxy] Error de red llamando a proxy.php para ${platform.name}:`, e);
               useFallback = true;
             }
 

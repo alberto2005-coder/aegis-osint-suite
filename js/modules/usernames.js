@@ -220,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (customProxyInput) {
         localStorage.setItem('username_custom_proxy', customProxy);
       }
+      let isFinished = false;
       const eventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}&useTor=${useTor}&proxy=${encodeURIComponent(customProxy)}`);
 
       eventSource.onmessage = (event) => {
@@ -263,6 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           if (data.status === 'done') {
+            isFinished = true;
             eventSource.close();
 
             // 3. Todo lo que no se haya encontrado, se marca como No Encontrado
@@ -291,6 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       eventSource.onerror = (err) => {
+        if (isFinished) return;
         console.error("Error en conexión EventSource con Sherlock:", err);
         eventSource.close();
 

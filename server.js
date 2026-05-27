@@ -98,43 +98,53 @@ app.all('/proxy.php', async (req, res) => {
     const url = req.query.url;
     if (!url) return res.status(400).json({ error: 'URL no proporcionada' });
 
-    // Intentamos enrutar a través de la Red Tor
     let success = false;
     let status = 0;
     let finalUrl = url;
     let body = '';
+    let torUsed = false;
 
     const randomUA = getRandomUA();
 
-    // 1. Intento por Tor
+    // 1. INTENTO POR TOR (Solo para sitios que lo permiten)
     try {
       const response = await axios.get(url, {
         httpAgent: torAgent,
         httpsAgent: torAgent,
-        timeout: 6000,
-        headers: { 'User-Agent': randomUA },
-        validateStatus: () => true // Aceptar cualquier código HTTP (200, 404, etc.)
+        timeout: 5000,
+        headers: { 'User-Agent': randomUA }
+        // Eliminamos validateStatus para que si da 403/404 salte al catch de inmediato
       });
+
       status = response.status;
       body = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+
+      // Si el body de Tor contiene rastros de bloqueo de Cloudflare o denegación, forzamos fallo para ir a Directo
+      const bodyCheck = body.toLowerCase();
+      if (bodyCheck.includes('access denied') || bodyCheck.includes('cloudflare') || bodyCheck.includes('captcha-delivery')) {
+        throw new Error('Bloqueado por Tor (Cloudflare/Access Denied)');
+      }
+
       success = true;
+      torUsed = true;
     } catch (e) {
-      console.warn(`[Tor] Error al acceder a ${url}:`, e.message);
+      console.warn(`[Tor Skipped/Failed] Para ${url}:`, e.message);
     }
 
-    // 2. Fallback: Intento directo si Tor falla o da bloqueos
-    if (!success || status === 403 || status === 429) {
+    // 2. FALLBACK SEGURO: Intento directo desde la IP de Render (Sin Tor)
+    if (!success) {
       try {
         const response = await axios.get(url, {
           timeout: 5000,
           headers: { 'User-Agent': randomUA },
-          validateStatus: () => true
+          validateStatus: (status) => status < 500 // Aceptamos 404, 403 para analizarlos
         });
         status = response.status;
         body = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         success = true;
+        torUsed = false;
       } catch (e) {
-        console.error(`[Direct] Fallo total accediendo a ${url}:`, e.message);
+        console.error(`[Direct Failed] Fallo absoluto en ${url}:`, e.message);
       }
     }
 
@@ -143,25 +153,41 @@ app.all('/proxy.php', async (req, res) => {
     }
 
     const bodyLower = body.toLowerCase();
+
+    // Lista de patrones reales para saber si NO existe el usuario
     const notFoundPatterns = [
       'sorry, this page isn',
       'page not found',
       'user not found',
       'this account doesn',
       "we can't find that user",
-      '404',
       'no existe',
       'no user found',
-      'profile_error'
+      'profile_error',
+      'cuenta que buscas no existe',
+      'usernotfound'
     ];
 
-    const textNotFound = notFoundPatterns.some(pattern => bodyLower.includes(pattern));
+    // Si devuelve 404 de cabeza es que no existe. Si es 200, buscamos los textos de "no encontrado"
+    let textNotFound = (status === 404) || notFoundPatterns.some(pattern => bodyLower.includes(pattern));
+
+    // Si la IP directa también se come un 403, no podemos asegurar si existe o no (Marcamos bloqueo)
+    if (status === 403 || status === 429 || bodyLower.includes('access denied')) {
+      return res.json({
+        status: status,
+        textNotFound: false,
+        blocked: true,
+        finalUrl,
+        torUsed
+      });
+    }
 
     return res.json({
       status,
       textNotFound,
+      blocked: false,
       finalUrl,
-      torUsed: success && !body.includes('Access Denied')
+      torUsed
     });
   }
 

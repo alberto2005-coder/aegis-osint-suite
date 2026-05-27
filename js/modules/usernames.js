@@ -107,11 +107,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Analizamos las respuestas basados en el status code o patrones del body de tu server.js
       // Un 404 claro significa que el usuario no existe.
+      // Si el servidor nos avisa de que la IP está bloqueada por la plataforma
+      if (data.blocked === true) {
+        return {
+          exists: null,
+          method: data.torUsed ? 'Tor 🧅' : 'Direct 🌐',
+          status: '⚠️ Bloqueado (IP)'
+        };
+      }
+
+      // Si el destino es un 404 o tiene patrones de "No encontrado"
       if (data.status === 404 || data.textNotFound === true) {
         return {
           exists: false,
           method: data.torUsed ? 'Tor 🧅' : 'Direct 🌐',
           status: '❌ No Encontrado'
+        };
+      }
+
+      if (data.status === 200 && data.textNotFound === false) {
+        return {
+          exists: true,
+          method: data.torUsed ? 'Tor 🧅' : 'Direct 🌐',
+          status: '✅ Encontrado'
         };
       }
 

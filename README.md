@@ -1,6 +1,13 @@
 # Aegis OSINT Suite
 
-Aegis es una suite de herramientas web para realizar reconocimiento pasivo (OSINT), análisis forense de archivos/correos y operaciones de criptografía/esteganografía directamente desde el navegador.
+Plataforma de inteligencia de fuentes abiertas (OSINT), análisis forense de metadatos y herramientas de criptografía/esteganografía en tiempo real.
+
+![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=flat-square&logo=javascript&logoColor=%23F7DF1E)
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat-square&logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=flat-square&logo=express&logoColor=%2361DAFB)
+![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat-square&logo=docker&logoColor=white)
+![Tor](https://img.shields.io/badge/Tor_Project-7D4698?style=flat-square&logo=Tor-Project&logoColor=white)
 
 ---
 
@@ -16,84 +23,83 @@ Aegis es una suite de herramientas web para realizar reconocimiento pasivo (OSIN
 
 ## Caracteristicas
 
-La suite incluye las siguientes herramientas accesibles desde el panel lateral:
+La suite se compone de módulos independientes accesibles desde la barra de navegación lateral:
 
-* **Buscador de Usuarios (Sherlock)**: Búsqueda de perfiles en cientos de redes sociales de forma paralela. Integra soporte opcional para Tor/Proxies y resoluciones rápidas en APIs clave (GitHub, Chess.com, etc.).
-* **Auditoría de Correos**: Verificación rápida de direcciones de email expuestas en filtraciones públicas (Breaches).
-* **Dominios e IPs**: Consulta DNS (registros A, MX, NS) y geolocalización de IPs reflejada en un mapa interactivo (Leaflet.js).
-* **OSINT Telefónico**: Análisis y formateo internacional de números de teléfono, identificando operadora y país.
-* **Nombres y Rostros**: Enlaces directos a búsquedas estructuradas y reconocimiento facial inverso.
-* **Extractor y Limpiador EXIF**: Obtiene metadatos de imágenes JPEG (cámara, fecha, coordenadas GPS en mapa) y permite descargar una copia de la imagen completamente limpia de metadatos.
-* **Analizador de Cabeceras de Correo**: Traza el flujo de servidores SMTP de un correo, dibuja la ruta geográfica en un mapa mundial y genera una línea de tiempo vertical visual de los saltos de red.
-* **Reportes PDF**: Exportación directa de informes en formato PDF con diseño limpio para Sherlock, EXIF y la Auditoría Web.
-* **Comandos Linux**: Chuleta rápida de comandos útiles para análisis de sistemas y seguridad.
-* **Google Dorks**: Generador de búsquedas avanzadas para localizar bases de datos expuestas, logins, directorios indexados y configuraciones desprotegidas.
-* **Auditoría Web**: Escaneo de tecnologías (CMS, librerías, CDN), subdominios en certificados de transparencia, escáner de puertos comunes y puntuación de seguridad (Mozilla Observatory).
-* **Caja de Cifrado (Crypto Box)**: Cifrado y descifrado de texto y archivos usando claves simétricas (AES-GCM, RC4, XOR, Vigenère).
-* **Esteganografía LSB**: Oculta texto cifrado dentro de los píxeles de cualquier imagen sin alterar su diseño visual. El mensaje solo se puede extraer si se proporciona la imagen PNG correcta, el método exacto y la clave secreta.
+* **Buscador de Usuarios (Sherlock)**: Rastreo de perfiles en paralelo sobre cientos de servicios de internet. Soporta proxies y enrutado opcional a través de Tor.
+* **Auditoría de Correos**: Consulta de reputación de direcciones de email y presencia en filtraciones de datos públicas (Breaches).
+* **Dominios e IPs**: Resolución DNS (A, MX, NS) y geolocalización física del hosting dibujada en un mapa interactivo.
+* **OSINT Telefonico**: Formateo y validación de números móviles, indicando el operador y país asignado.
+* **Nombres y Rostros**: Enlaces directos a motores de búsqueda estructurada e identificación facial inversa.
+* **Metadatos EXIF**: Extracción de información interna de fotos (marca de cámara, modelo, fecha, coordenadas GPS en mapa) y descarga de copias sin metadatos.
+* **Analizador de Cabeceras de Correo**: Detección de servidores SMTP intermedios, validación SPF/DKIM, mapa de la trayectoria mundial del mensaje y representación en una línea de tiempo vertical de saltos.
+* **Reportes PDF**: Generación y exportación instantánea de reportes en PDF para Sherlock, metadatos EXIF y auditoría web.
+* **Comandos Linux**: Referencia rápida de comandos útiles en sistemas operativos UNIX para tareas forenses.
+* **Google Dorks**: Asistente para construir consultas de indexación de Google avanzadas (logins, bases de datos expuestas, ficheros de configuración).
+* **Auditoría Web**: Fingerprint de tecnologías de desarrollo, listado de subdominios, análisis SSL con días restantes, calificación de cabeceras HTTP y escáner de puertos.
+* **Crypto Box & Esteganografia (LSB)**: Cifrado simétrico de texto (AES-GCM, RC4, XOR, Vigenère) e incrustación de mensajes cifrados en píxeles de imágenes PNG, permitiendo descifrarlos únicamente al subir la imagen portadora con su respectivo método y contraseña.
 
 ---
 
 ## Instalacion Local
 
 ### Requisitos
-* **Node.js** (v18+)
-* **Python 3** (requerido si vas a usar la herramienta de Sherlock localmente)
+* Node.js (v18+)
+* Python 3 (requerido únicamente para el rastreo de Sherlock en local)
 
-### Pasos
+### Ejecucion de comandos
 1. Clona el repositorio e ingresa a la carpeta:
    ```bash
    git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
    cd aegis-osint-suite
    ```
-2. Instala las dependencias:
+2. Instala las dependencias necesarias:
    ```bash
    npm install
    ```
-3. Arranca la aplicación:
+3. Arranca la aplicación local:
    ```bash
    npm start
    ```
-4. Abre en tu navegador: `http://localhost:3000`
+4. Navega a `http://localhost:3000` en tu explorador.
 
 ---
 
 ## Uso con Docker
 
-El proyecto incluye un `Dockerfile` que empaqueta todo el entorno (incluyendo el servicio de Tor y Sherlock en Python).
+El proyecto incluye un entorno preconfigurado dentro de un contenedor Alpine Linux con el demonio de Tor y la instalación de Sherlock lista.
 
-1. Construye la imagen:
+1. Construye la imagen de contenedor:
    ```bash
    docker build -t aegis-osint .
    ```
-2. Levanta el contenedor mapeando el puerto 3000:
+2. Inicia el contenedor exponiendo el puerto de red:
    ```bash
    docker run -d -p 3000:3000 --name aegis aegis-osint
    ```
-3. Entra en `http://localhost:3000`. El contenedor correrá Tor en segundo plano de forma automática para las consultas anonimizadas.
+3. Accede a `http://localhost:3000`. Las consultas de red que utilicen Tor serán enrutadas internamente en el contenedor de forma automática.
 
 ---
 
 ## Despliegue en la Nube
 
-La aplicación escucha en el puerto definido por la variable de entorno `PORT` (`process.env.PORT || 3000`), lo que facilita su despliegue en múltiples servicios.
+La aplicación escucha dinámicamente en el puerto indicado por la variable de entorno `PORT` (`process.env.PORT || 3000`).
 
-### 1. Plataformas PaaS (Railway, Render, Fly.io, Heroku)
-Conecta tu repositorio de GitHub al servicio y define:
+### PaaS (Railway, Render, Fly.io, Heroku)
+Conecta tu repositorio de GitHub y define las siguientes variables:
 * **Entorno**: Node.js
 * **Build Command**: `npm install`
 * **Start Command**: `npm start`
-* **Nota**: Si la plataforma admite despliegues con Docker, selecciona usar el `Dockerfile` para tener Tor y Sherlock preconfigurados de forma nativa en el contenedor.
+* **Nota**: Si tu proveedor soporta despliegues con Docker, selecciona utilizar el `Dockerfile` directamente para asegurar que las dependencias de Python y el servicio de Tor arranquen de forma correcta en producción.
 
-### 2. Servidor VPS (Ubuntu/Debian) usando PM2
-Si quieres montar la app en tu propio servidor:
+### Servidores Virtuales (VPS Ubuntu/Debian) con PM2
+Si deseas alojar la aplicación de forma persistente en un servidor dedicado:
 ```bash
-# Instalar dependencias
+# Instalacion de software
 sudo apt update && sudo apt install -y nodejs npm python3 python3-pip tor
 sudo npm install -g pm2
 python3 -m pip install sherlock-project
 
-# Clonar e iniciar
+# Despliegue e inicio de servicio
 git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
 cd aegis-osint-suite
 npm install
@@ -106,15 +112,15 @@ pm2 startup
 
 ## Gestion de Recursos
 
-Para evitar bloqueos y no exceder límites de consumo de recursos en servidores en la nube (como el límite de 512MB de RAM en cuentas gratuitas):
+Para garantizar estabilidad operativa y evitar superar límites de memoria en servidores con recursos limitados (como las instancias gratuitas de 512MB RAM):
 
-* **Limpieza de procesos huérfanos**: Cuando un usuario cancela un escaneo en el buscador o cierra la pestaña, el servidor detecta la desconexión (`req.on('close')`) y mata inmediatamente el proceso de Sherlock que corría en el sistema (`SIGTERM`).
-* **Watchdog (Tiempo Límite)**: Cada consulta de Sherlock tiene asignado un temporizador máximo de 120 segundos. Si un proxy lento o una red bloqueada congela el proceso, el servidor lo fuerza a cerrarse (`SIGKILL`) para no dejar procesos consumiendo memoria RAM.
+* **Limpieza en desconexión**: El backend escucha el evento `req.on('close')`. Si el usuario interrumpe un escaneo o cierra la pestaña, el subproceso de Sherlock asociado se finaliza de inmediato (`SIGTERM`).
+* **Watchdog de Timeout**: Cada escaneo de Sherlock tiene asignado un temporizador de 120 segundos. Al expirar este plazo, el proceso hijo se termina forzosamente (`SIGKILL`) para liberar recursos de la memoria RAM del servidor.
 
 ---
 
 ## Stack Tecnologico
 
-* **Front-End**: HTML5, CSS (diseño responsivo oscuro con estética glassmorphism), JS Vanilla, Leaflet.js (mapas), FontAwesome 6, jsPDF.
+* **Front-End**: HTML5 / CSS3 (diseño glassmorphism responsivo), JavaScript Vanilla, Leaflet.js (mapeado de geolocalización), jsPDF (generación de informes).
 * **Back-End**: Node.js, Express, Axios.
-* **Criptografía**: Web Crypto API (SubtleCrypto nativo para AES-GCM) y manipulación de canales RGB (Canvas API) para esteganografía LSB.
+* **Criptografia**: Web Crypto API (SubtleCrypto para AES-GCM), Canvas API (lectura/escritura de canales RGB para esteganografía LSB).

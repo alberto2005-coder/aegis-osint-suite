@@ -169,6 +169,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updateStats() {
+    if (!statScanned || !statFound || !statErrors) return;
+    const found = currentUsernameResults.filter(r => r.status.includes('✅')).length;
+    const errors = currentUsernameResults.filter(r => r.status.includes('❌') || r.status.includes('⚠️')).length;
+    const scanned = currentUsernameResults.filter(r => !r.status.includes('🔍')).length;
+
+    statScanned.textContent = scanned;
+    statFound.textContent = found;
+    statErrors.textContent = errors;
+  }
+
   if (btnScanUsername) {
     btnScanUsername.addEventListener('click', async () => {
       const username = usernameInput.value.trim();
@@ -187,41 +198,23 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Mostrar la tabla de resultados de inmediato para ver el avance en tiempo real
       usernameResultsContainer.style.display = 'block';
+      
+      // Inicializar resultados con estado "Buscando..."
       currentUsernameResults = [];
-      usernameTableBody.innerHTML = '';
-
-      let foundCount = 0;
-      let errorCount = 0;
-
-      statScanned.textContent = '0';
-      statFound.textContent = '0';
-      statErrors.textContent = '0';
-      usernameResultsContainer.style.display = 'block';
-
-      // 1. Mostrar las plataformas base como "Buscando..." para feedback inmediato
-      const platformRows = {};
       platformsToScan.forEach(platform => {
-        const cleanName = platform.name.replace(/[^a-zA-Z0-9]/g, '');
         const profileUrl = platform.url.replace('{username}', username);
-        const tr = document.createElement('tr');
-        tr.dataset.category = platform.category || 'all';
-        tr.innerHTML = `
-          <td><strong>${platform.icon} ${platform.name}</strong></td>
-          <td><a href="${profileUrl}" target="_blank" class="profile-link"><i class="fa-solid fa-up-right-from-square"></i> ${profileUrl}</a></td>
-          <td><span class="badge badge-warning" id="status-${cleanName}">🔍 Buscando...</span><br><small style="color:#888;font-size:0.75em;">Sherlock OSINT</small></td>
-          <td><button class="btn btn-secondary btn-sm" onclick="window.open('${profileUrl}', '_blank')"><i class="fa-solid fa-external-link"></i> Abrir</button></td>
-        `;
-        usernameTableBody.appendChild(tr);
-        
-        platformRows[platform.name.toLowerCase()] = {
-          element: tr,
-          statusSpan: tr.querySelector(`#status-${cleanName}`),
-          url: profileUrl,
-          icon: platform.icon,
+        currentUsernameResults.push({
+          platform: platform.name,
           category: platform.category,
-          updated: false
-        };
+          url: profileUrl,
+          status: '🔍 Buscando...',
+          method: 'Sherlock OSINT',
+          icon: platform.icon
+        });
       });
+
+      renderFilteredResults();
+      updateStats();
 
       // 2. Iniciar conexión SSE con el backend de Sherlock
       const useTor = (window.isTorActive?.() || document.getElementById('username-use-tor')?.checked) ? 'true' : 'false';
@@ -238,61 +231,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (data.status === 'found') {
             const platName = data.platform.toLowerCase();
-            const resultObj = {
-              platform: data.platform,
-              category: 'social',
-              url: data.url,
-              status: '✅ Encontrado',
-              method: 'Sherlock OSINT',
-              icon: '🌐'
-            };
-
-            // Si es una de las plataformas de la lista base, la actualizamos
-            if (platformRows[platName]) {
-              // Si ya había sido actualizada por la API rápida, evitamos duplicar la lógica
-              if (platformRows[platName].updated) return;
-              
-              platformRows[platName].statusSpan.className = 'badge badge-success';
-              platformRows[platName].statusSpan.textContent = '✅ Encontrado';
-              platformRows[platName].updated = true;
-              resultObj.category = platformRows[platName].category;
-              resultObj.icon = platformRows[platName].icon;
+            
+            // Buscar si ya existe en la lista base
+            const item = currentUsernameResults.find(r => r.platform.toLowerCase() === platName);
+            if (item) {
+              item.status = '✅ Encontrado';
             } else {
-              // Si es una plataforma adicional encontrada, la creamos al vuelo
-              const tr = document.createElement('tr');
-              tr.dataset.category = 'social';
-              tr.innerHTML = `
-                <td><strong>🌐 ${data.platform}</strong></td>
-                <td><a href="${data.url}" target="_blank" class="profile-link"><i class="fa-solid fa-up-right-from-square"></i> ${data.url}</a></td>
-                <td><span class="badge badge-success">✅ Encontrado</span><br><small style="color:#888;font-size:0.75em;">Sherlock OSINT</small></td>
-                <td><button class="btn btn-secondary btn-sm" onclick="window.open('${data.url}', '_blank')"><i class="fa-solid fa-external-link"></i> Abrir</button></td>
-              `;
-              usernameTableBody.appendChild(tr);
+              // Si es una plataforma adicional, la añadimos al vuelo
+              currentUsernameResults.push({
+                platform: data.platform,
+                category: 'social', // Categoría por defecto para extras
+                url: data.url,
+                status: '✅ Encontrado',
+                method: 'Sherlock OSINT',
+                icon: '🌐'
+              });
             }
-
-            currentUsernameResults.push(resultObj);
-            foundCount++;
-            statFound.textContent = foundCount;
-            statScanned.textContent = currentUsernameResults.length;
+            renderFilteredResults();
+            updateStats();
           }
 
           if (data.status === 'not_found') {
             const platName = data.platform.toLowerCase();
-            if (platformRows[platName] && !platformRows[platName].updated) {
-              platformRows[platName].statusSpan.className = 'badge badge-error';
-              platformRows[platName].statusSpan.textContent = '❌ No Encontrado';
-              platformRows[platName].updated = true;
-
-              currentUsernameResults.push({
-                platform: platformRows[platName].element.querySelector('strong').textContent.replace(platformRows[platName].icon, '').trim(),
-                category: platformRows[platName].category,
-                url: platformRows[platName].url,
-                status: '❌ No Encontrado',
-                method: 'Sherlock OSINT',
-                icon: platformRows[platName].icon
-              });
-
-              statScanned.textContent = currentUsernameResults.length;
+            const item = currentUsernameResults.find(r => r.platform.toLowerCase() === platName);
+            if (item) {
+              item.status = '❌ No Encontrado';
+              renderFilteredResults();
+              updateStats();
             }
           }
 
@@ -300,25 +265,15 @@ document.addEventListener('DOMContentLoaded', () => {
             isFinished = true;
             eventSource.close();
 
-            // 3. Todo lo que no se haya encontrado ni reportado por Sherlock, se marca como No Encontrado
-            Object.keys(platformRows).forEach(key => {
-              if (!platformRows[key].updated) {
-                platformRows[key].statusSpan.className = 'badge badge-error';
-                platformRows[key].statusSpan.textContent = '❌ No Encontrado';
-                platformRows[key].updated = true;
-                
-                currentUsernameResults.push({
-                  platform: key.charAt(0).toUpperCase() + key.slice(1),
-                  category: platformRows[key].category,
-                  url: platformRows[key].url,
-                  status: '❌ No Encontrado',
-                  method: 'Sherlock OSINT',
-                  icon: platformRows[key].icon
-                });
+            // Marcar cualquier plataforma base que siga en "Buscando..." como "No Encontrado"
+            currentUsernameResults.forEach(r => {
+              if (r.status.includes('🔍')) {
+                r.status = '❌ No Encontrado';
               }
             });
 
-            statScanned.textContent = currentUsernameResults.length;
+            renderFilteredResults();
+            updateStats();
             btnScanUsername.disabled = false;
             btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
           }
@@ -333,15 +288,14 @@ document.addEventListener('DOMContentLoaded', () => {
         eventSource.close();
 
         // Si falla la conexión, marcamos las pendientes como omitidas
-        Object.keys(platformRows).forEach(key => {
-          if (!platformRows[key].updated) {
-            platformRows[key].statusSpan.className = 'badge badge-error';
-            platformRows[key].statusSpan.textContent = '❌ Error / Omitido';
-            errorCount++;
+        currentUsernameResults.forEach(r => {
+          if (r.status.includes('🔍')) {
+            r.status = '❌ Error / Omitido';
           }
         });
 
-        statErrors.textContent = errorCount;
+        renderFilteredResults();
+        updateStats();
         btnScanUsername.disabled = false;
         btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
       };
@@ -353,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function appendUsernameRow(row) {
     let badgeClass = 'badge-error';
     if (row.status.includes('✅')) badgeClass = 'badge-success';
-    if (row.status.includes('⚠️')) badgeClass = 'badge-warning';
+    if (row.status.includes('⚠️') || row.status.includes('🔍')) badgeClass = 'badge-warning';
 
     const tr = document.createElement('tr');
     tr.dataset.category = row.category || 'all';

@@ -12,12 +12,19 @@ Plataforma de inteligencia de fuentes abiertas (OSINT), análisis forense de met
 ---
 
 ## Indice
-1. [Caracteristicas](#caracteristicas)
-2. [Instalacion Local](#instalacion-local)
-3. [Uso con Docker](#uso-con-docker)
-4. [Despliegue en la Nube](#despliegue-en-la-nube)
-5. [Gestion de Recursos](#gestion-de-recursos)
-6. [Stack Tecnologico](#stack-tecnologico)
+- [Aegis OSINT Suite](#aegis-osint-suite)
+  - [Indice](#indice)
+  - [Caracteristicas](#caracteristicas)
+  - [Instalacion Local](#instalacion-local)
+    - [Requisitos](#requisitos)
+    - [Ejecucion de comandos](#ejecucion-de-comandos)
+  - [Uso con Docker](#uso-con-docker)
+  - [Despliegue en la Nube](#despliegue-en-la-nube)
+    - [PaaS (Railway, Render, Fly.io, Heroku)](#paas-railway-render-flyio-heroku)
+    - [Servidores Virtuales (VPS Ubuntu/Debian) con PM2](#servidores-virtuales-vps-ubuntudebian-con-pm2)
+  - [Gestion de Recursos](#gestion-de-recursos)
+  - [Stack Tecnologico](#stack-tecnologico)
+  - [Descargo de Responsabilidad](#descargo-de-responsabilidad)
 
 ---
 

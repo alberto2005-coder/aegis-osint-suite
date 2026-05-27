@@ -17,6 +17,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Exif.js Library for image metadata extraction in frontend -->
   <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+  <!-- jsPDF Library for generating OSINT reports in PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- App Icon / Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
   <!-- Marked.js for markdown rendering -->
@@ -137,6 +139,9 @@
         <button class="nav-item" data-tab="webaudit-tab">
           <i class="fa-solid fa-shield-halved"></i> <span>Auditoría Web</span>
         </button>
+        <button class="nav-item" data-tab="crypto-tab">
+          <i class="fa-solid fa-key"></i> <span>Cifrado / Descifrado</span>
+        </button>
       </nav>
       <div class="sidebar-footer">
         <p>Aegis Suite v1.1.0</p>
@@ -203,6 +208,9 @@
                 <input type="text" id="username-filter" placeholder="Filtrar plataforma...">
                 <button class="btn btn-secondary btn-sm" id="btn-export-username">
                   <i class="fa-solid fa-file-export"></i> Exportar
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-export-username-pdf" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: white;">
+                  <i class="fa-solid fa-file-pdf"></i> PDF
                 </button>
               </div>
             </div>
@@ -276,7 +284,7 @@
               <div class="info-list" id="geoip-info-list">
                 <!-- Filled dynamically -->
               </div>
-              <div id="ip-map"></div>
+              <div id="ip-map" style="height: 200px; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border-color); display: none;"></div>
             </div>
             <!-- DNS Card -->
             <div class="glass-card" id="dns-card" style="display: none;">
@@ -420,10 +428,15 @@
               <div class="info-list" id="exif-info-list" style="margin-top: 1rem;">
                 <!-- Dynamically filled -->
               </div>
-              <!-- Botón limpiador EXIF -->
-              <button class="btn btn-secondary" id="btn-exif-clean-download">
-                <i class="fa-solid fa-eraser"></i> Descargar imagen limpia (sin EXIF / OPSEC)
-              </button>
+               <!-- Botón limpiador EXIF y PDF -->
+               <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                 <button class="btn btn-secondary" id="btn-exif-clean-download" style="flex-grow: 1;">
+                   <i class="fa-solid fa-eraser"></i> Descargar imagen limpia
+                 </button>
+                 <button class="btn btn-secondary" id="btn-export-exif-pdf" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: white;">
+                   <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                 </button>
+               </div>
             </div>
           </div>
 
@@ -671,8 +684,14 @@
           <!-- Fila superior: Resumen + SSL -->
           <div class="grid-2col">
             <div class="glass-card" id="webaudit-overview">
-              <h3><i class="fa-solid fa-circle-info"></i> Resumen General</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3><i class="fa-solid fa-circle-info"></i> Resumen General</h3>
+                <button class="btn btn-secondary btn-sm" id="btn-export-webaudit-pdf" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: white;">
+                  <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                </button>
+              </div>
               <div class="info-list" id="webaudit-overview-list"></div>
+              <div id="webaudit-map" style="height: 180px; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border-color); display: none;"></div>
             </div>
             <div class="glass-card" id="webaudit-ssl-card">
               <h3><i class="fa-solid fa-lock"></i> Certificado SSL / TLS</h3>
@@ -763,6 +782,101 @@
           </button>
         </div>
       </section>
+
+      <!-- Cifrado / Descifrado Tab -->
+      <section id="crypto-tab" class="tab-panel">
+        <div class="glass-card search-card">
+          <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
+            
+            <div class="input-group" style="flex:1;min-width:150px;">
+              <label for="crypto-target-type">Medio / Canal</label>
+              <select id="crypto-target-type">
+                <option value="text">Texto Directo</option>
+                <option value="image">Ocultar en Imagen (Esteganografía)</option>
+              </select>
+            </div>
+
+            <div class="input-group" style="flex:1;min-width:150px;">
+              <label for="crypto-mode">Operación</label>
+              <select id="crypto-mode">
+                <option value="encrypt">Cifrar Mensaje</option>
+                <option value="decrypt">Descifrar Mensaje</option>
+              </select>
+            </div>
+
+            <div class="input-group" style="flex:2;min-width:200px;">
+              <label for="crypto-algorithm">Algoritmo de Cifrado</label>
+              <select id="crypto-algorithm">
+                <option value="aes-gcm">AES-GCM (Nativo del Navegador - Alta Seguridad)</option>
+                <option value="rc4">RC4 (Stream Cipher clásico)</option>
+                <option value="xor">XOR con Clave (Representación Hex)</option>
+                <option value="vigenere">Cifrado de Vigenère (Clásico)</option>
+              </select>
+            </div>
+
+            <div class="input-group" style="flex:2;min-width:200px;position:relative;">
+              <label for="crypto-key">Clave Secreta</label>
+              <div style="position:relative;display:flex;align-items:center;">
+                <input type="password" id="crypto-key" placeholder="Introduce la clave secreta..." style="width:100%;padding-right:2.5rem;">
+                <button type="button" id="btn-toggle-crypto-key" style="position:absolute;right:10px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="btn-crypto-execute" style="height:46px;white-space:nowrap;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Procesar
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenedor Esteganografía (Imagen) -->
+        <div id="stego-image-container" class="glass-card" style="display:none;margin-top:1.5rem;">
+          <h3><i class="fa-solid fa-image"></i> Imagen Portadora</h3>
+          <p class="card-desc">Carga la imagen en la que deseas ocultar el mensaje (modo Cifrar) o de la que deseas extraerlo (modo Descifrar). Se recomienda formato PNG para no perder bits de información por compresión.</p>
+          
+          <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:1rem;">
+            <!-- Dropzone -->
+            <div class="image-drop-zone" id="stego-drop-zone" style="min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--border-color);border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;background:rgba(255,255,255,0.01);">
+              <i class="fa-solid fa-file-image" style="font-size:2.5rem;color:var(--accent-color);margin-bottom:0.5rem;"></i>
+              <p style="margin:0;font-size:0.9rem;" id="stego-drop-zone-text">Arrastra una imagen aquí o haz clic para subir</p>
+              <input type="file" id="stego-image-input" accept="image/*" style="display:none;">
+            </div>
+
+            <!-- Vista Previa / Descarga -->
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed var(--border-color);border-radius:10px;padding:1rem;background:rgba(255,255,255,0.01);min-height:160px;">
+              <img id="stego-preview" src="" alt="Vista previa de esteganografía" style="display:none;max-width:100%;max-height:120px;border-radius:6px;object-fit:contain;box-shadow:0 0 15px rgba(0,0,0,0.5);">
+              <span id="stego-no-image" style="color:var(--text-muted);font-size:0.85rem;font-style:italic;">Ninguna imagen cargada</span>
+              
+              <!-- Botón de descarga de imagen stego -->
+              <button class="btn btn-success" id="btn-stego-download" style="display:none;margin-top:0.75rem;width:100%;height:38px;padding:0 1rem;font-size:0.85rem;">
+                <i class="fa-solid fa-download"></i> Descargar Imagen Cifrada (PNG)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:1.5rem;margin-top:1.5rem;min-height:220px;" class="crypto-split-layout">
+          <!-- Textarea Entrada -->
+          <div class="glass-card" style="display:flex;flex-direction:column;gap:0.75rem;">
+            <h3><i class="fa-solid fa-file-text"></i> Mensaje de Entrada</h3>
+            <p class="card-desc">Escribe o pega el texto que deseas cifrar o descifrar.</p>
+            <textarea id="crypto-input" placeholder="Escribe tu mensaje aquí..." style="flex:1;min-height:150px;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:8px;padding:0.75rem;color:var(--text-primary);font-family:monospace;font-size:0.9rem;resize:vertical;"></textarea>
+          </div>
+
+          <!-- Textarea Salida -->
+          <div class="glass-card" style="display:flex;flex-direction:column;gap:0.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3><i class="fa-solid fa-lock"></i> Resultado</h3>
+              <button class="btn btn-secondary btn-sm" id="btn-crypto-copy" style="padding:0.25rem 0.6rem;font-size:0.8rem;">
+                <i class="fa-solid fa-copy"></i> Copiar
+              </button>
+            </div>
+            <p class="card-desc">El resultado de la operación aparecerá debajo.</p>
+            <textarea id="crypto-output" readonly placeholder="El resultado procesado aparecerá aquí..." style="flex:1;min-height:150px;background:rgba(255,255,255,0.01);border:1px solid var(--border-color);border-radius:8px;padding:0.75rem;color:var(--cyan-color);font-family:monospace;font-size:0.9rem;resize:vertical;"></textarea>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -789,5 +903,6 @@
   <script src="js/modules/linux.js"></script>
   <script src="js/modules/dorks.js"></script>
   <script src="js/modules/webanalyzer.js"></script>
+  <script src="js/modules/crypto.js"></script>
 </body>
 </html>

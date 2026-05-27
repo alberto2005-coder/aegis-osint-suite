@@ -5,6 +5,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!btnAudit) return;
 
+  let webauditMapInstance = null;
+  let currentWebauditData = null;
+  let currentWebdomain = "";
+
+  function updateWebauditMap(lat, lon, label) {
+    const mapEl = document.getElementById('webaudit-map');
+    if (!mapEl) return;
+    mapEl.style.display = 'block';
+    if (webauditMapInstance) {
+      webauditMapInstance.remove();
+      webauditMapInstance = null;
+    }
+    setTimeout(() => {
+      try {
+        webauditMapInstance = L.map('webaudit-map').setView([lat, lon], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(webauditMapInstance);
+        L.marker([lat, lon]).addTo(webauditMapInstance).bindPopup(label).openPopup();
+      } catch (err) {
+        console.error("Error al renderizar el mapa de auditoría web:", err);
+      }
+    }, 100);
+  }
+
   // ── helpers ──────────────────────────────────────────────
   const infoRow = (label, value, color = '') =>
     `<div class="info-item">
@@ -24,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Normalize domain
     raw = raw.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/^www\./i, '');
     const domain = raw;
+    currentWebdomain = domain;
+    currentWebauditData = {};
+
+    const mapEl = document.getElementById('webaudit-map');
+    if (mapEl) mapEl.style.display = 'none';
 
     window.showLoader(`Auditando ${domain}…`);
     results.style.display = 'none';
@@ -45,6 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dns = dnsData.status === 'fulfilled' ? dnsData.value : null;
     const ip  = dns?.ip || 'No resuelto';
 
+    currentWebauditData["IP del Servidor"] = ip;
+    if (dns?.mx?.length) currentWebauditData["Servidor de Correo (MX)"] = dns.mx[0];
+    if (dns?.nameservers?.length) currentWebauditData["Nameservers"] = dns.nameservers.slice(0, 2).join(', ');
+
     let overviewHtml = infoRow('Dominio analizado', `<strong>${domain}</strong>`);
     overviewHtml += infoRow('IP del servidor', ip, 'var(--cyan-color)');
 
@@ -54,6 +88,18 @@ document.addEventListener('DOMContentLoaded', () => {
             style="background:rgba(0,240,255,0.1);color:var(--cyan-color);border:1px solid var(--cyan-color);text-decoration:none;padding:2px 8px;border-radius:4px;font-size:0.75rem;">
            <i class="fa-solid fa-globe"></i> Ver en ipinfo.io
          </a>`);
+      
+      // Geolocalizar en el mapa interactivo Leaflet
+      fetch(`https://ipapi.co/${ip}/json/`)
+        .then(r => r.json())
+        .then(geoip => {
+          if (geoip && geoip.latitude && geoip.longitude) {
+            currentWebauditData["Ubicación Servidor"] = `${geoip.city}, ${geoip.country_name} (${geoip.org})`;
+            updateWebauditMap(geoip.latitude, geoip.longitude, `Hosting IP: ${ip}<br>${geoip.city}, ${geoip.country_name}<br><small>${geoip.org}</small>`);
+          }
+        }).catch(err => {
+          console.error("Error geolocalizando IP de auditoría:", err);
+        });
     }
 
     if (dns?.mx?.length) {
@@ -355,6 +401,34 @@ document.addEventListener('DOMContentLoaded', () => {
         <small>${t.sub}</small>
       </a>`).join('');
 
+    currentWebauditData = {
+      "IP del Servidor": ip,
+      "Servidor de Correo (MX)": dns?.mx?.[0] || "Ninguno",
+      "Nameservers": dns?.nameservers?.slice(0, 2).join(', ') || "Ninguno",
+      "Ubicación Servidor": currentWebauditData["Ubicación Servidor"] || "Desconocida",
+      ssl: proxyData?.ssl || null,
+      scoreValue: (obs && typeof obs.score === 'number') ? obs.score : (proxyData?.securityScore ?? null),
+      grade: obs?.grade || null,
+      headers: (obs && obs.tests) 
+        ? Object.entries({
+            content_security_policy: 'Content-Security-Policy (CSP)',
+            strict_transport_security: 'HSTS (Strict-Transport-Security)',
+            x_frame_options: 'X-Frame-Options',
+            x_content_type_options: 'X-Content-Type-Options',
+            referrer_policy: 'Referrer-Policy',
+            cookies: 'Seguridad de Cookies',
+            cross_origin_resource_policy: 'Cross-Origin-Resource-Policy',
+            redirection: 'Redirección HTTPS'
+          }).map(([k, label]) => ({ header: label, present: obs.tests[k]?.pass || false, severity: 'N/A' }))
+        : (proxyData?.securityHeaders || []),
+      techs: techs || [],
+      subdomains: subs || [],
+      ports: (portsData.status === 'fulfilled' && portsData.value?.ports) ? portsData.value.ports.filter(p => p.open) : []
+    };
+
+    const btnExportPdf = document.getElementById('btn-export-webaudit-pdf');
+    if (btnExportPdf) btnExportPdf.style.display = 'inline-block';
+
     results.style.display = 'block';
     window.hideLoader();
   });
@@ -552,5 +626,204 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error("Error en fetchTech:", e);
       return [];
     }
+  }
+
+  const btnExportPdf = document.getElementById('btn-export-webaudit-pdf');
+  if (btnExportPdf) {
+    btnExportPdf.addEventListener('click', () => {
+      try {
+        if (!currentWebauditData) return;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Cabecera institucional
+        doc.setFillColor(15, 23, 42); // Navy background
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("AEGIS OSINT SUITE", 15, 25);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("REPORTE DE AUDITORÍA WEB Y SEGURIDAD", 15, 33);
+        
+        // Info general
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(11);
+        doc.text(`Dominio analizado: ${currentWebdomain}`, 15, 50);
+        doc.text(`Fecha del análisis: ${new Date().toLocaleString()}`, 15, 57);
+        
+        let y = 70;
+        
+        // Sección 1: Información de Servidor y DNS
+        doc.setFont("helvetica", "bold");
+        doc.text("1. INFORMACIÓN DEL SERVIDOR Y DNS", 15, y);
+        doc.line(15, y + 2, 195, y + 2);
+        doc.setFont("helvetica", "normal");
+        y += 10;
+        
+        const details = [
+          ["IP del Servidor:", currentWebauditData["IP del Servidor"] || "No resuelta"],
+          ["Ubicación de Hosting:", currentWebauditData["Ubicación Servidor"] || "Desconocida"],
+          ["Servidor de Correo (MX):", currentWebauditData["Servidor de Correo (MX)"] || "Ninguno"],
+          ["Nameservers:", currentWebauditData["Nameservers"] || "Ninguno"]
+        ];
+        
+        details.forEach(([lbl, val]) => {
+          doc.setFont("helvetica", "bold");
+          doc.text(lbl, 15, y);
+          doc.setFont("helvetica", "normal");
+          doc.text(String(val), 70, y);
+          y += 7;
+        });
+        
+        y += 5;
+        
+        // Sección 2: Seguridad y SSL
+        doc.setFont("helvetica", "bold");
+        doc.text("2. SEGURIDAD SSL Y CERTIFICADO", 15, y);
+        doc.line(15, y + 2, 195, y + 2);
+        doc.setFont("helvetica", "normal");
+        y += 10;
+        
+        if (currentWebauditData.ssl) {
+          const ssl = currentWebauditData.ssl;
+          const sslDetails = [
+            ["Estado:", ssl.valid ? "Válido" : "Expirado / Inválido"],
+            ["Emisor:", ssl.issuer || "N/A"],
+            ["Vence el:", ssl.validTo || "N/A"],
+            ["Días restantes:", ssl.daysLeft !== null ? `${ssl.daysLeft} días` : "N/A"]
+          ];
+          sslDetails.forEach(([lbl, val]) => {
+            doc.setFont("helvetica", "bold");
+            doc.text(lbl, 15, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(String(val), 70, y);
+            y += 7;
+          });
+        } else {
+          doc.text("Sin datos de certificado SSL o análisis directo no disponible.", 15, y);
+          y += 7;
+        }
+        
+        y += 5;
+        
+        // Sección 3: Puntuación de Cabeceras de Seguridad
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.text("3. PUNTUACIÓN Y CABECERAS DE SEGURIDAD", 15, y);
+        doc.line(15, y + 2, 195, y + 2);
+        doc.setFont("helvetica", "normal");
+        y += 10;
+        
+        const scoreStr = currentWebauditData.scoreValue !== null ? `${currentWebauditData.scoreValue}/100` : "N/D";
+        const gradeStr = currentWebauditData.grade ? ` (Grado: ${currentWebauditData.grade})` : "";
+        doc.setFont("helvetica", "bold");
+        doc.text("Puntuación General:", 15, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${scoreStr}${gradeStr}`, 70, y);
+        y += 10;
+        
+        if (currentWebauditData.headers && currentWebauditData.headers.length > 0) {
+          doc.setFont("helvetica", "bold");
+          doc.text("Cabecera", 15, y);
+          doc.text("Estado", 100, y);
+          doc.text("Severidad", 150, y);
+          doc.line(15, y + 2, 195, y + 2);
+          y += 8;
+          doc.setFont("helvetica", "normal");
+          
+          currentWebauditData.headers.forEach(h => {
+            if (y > 270) { doc.addPage(); y = 20; }
+            const name = h.header || h.name || "";
+            const present = h.present ? "Presente" : "Falta";
+            const severity = h.severity || "N/A";
+            doc.text(String(name).substring(0, 40), 15, y);
+            doc.text(String(present), 100, y);
+            doc.text(String(severity).toUpperCase(), 150, y);
+            y += 7;
+          });
+        }
+        
+        y += 5;
+        
+        // Sección 4: Tecnologías Detectadas
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.text("4. TECNOLOGÍAS DETECTADAS", 15, y);
+        doc.line(15, y + 2, 195, y + 2);
+        y += 10;
+        doc.setFont("helvetica", "normal");
+        
+        if (currentWebauditData.techs && currentWebauditData.techs.length > 0) {
+          currentWebauditData.techs.forEach(t => {
+            if (y > 270) { doc.addPage(); y = 20; }
+            doc.setFont("helvetica", "bold");
+            doc.text(String(t.name), 15, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Categoría: ${t.category}`, 80, y);
+            y += 7;
+          });
+        } else {
+          doc.text("No se detectaron tecnologías mediante huellas digitales.", 15, y);
+          y += 7;
+        }
+        
+        y += 5;
+        
+        // Sección 5: Puertos Abiertos
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.text("5. PUERTOS ABIERTOS DETECTADOS", 15, y);
+        doc.line(15, y + 2, 195, y + 2);
+        y += 10;
+        doc.setFont("helvetica", "normal");
+        
+        if (currentWebauditData.ports && currentWebauditData.ports.length > 0) {
+          currentWebauditData.ports.forEach(p => {
+            if (y > 270) { doc.addPage(); y = 20; }
+            doc.setFont("helvetica", "bold");
+            doc.text(`Puerto ${p.port}`, 15, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${p.service} - Riesgo: ${p.risk}`, 80, y);
+            y += 7;
+          });
+        } else {
+          doc.text("No se detectaron puertos abiertos críticos en el escaneo rápido.", 15, y);
+          y += 7;
+        }
+        
+        y += 5;
+        
+        // Sección 6: Subdominios Encontrados
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.text("6. SUBDOMINIOS DETECTADOS (CERTIFICADOS)", 15, y);
+        doc.line(15, y + 2, 195, y + 2);
+        y += 10;
+        doc.setFont("helvetica", "normal");
+        
+        if (currentWebauditData.subdomains && currentWebauditData.subdomains.length > 0) {
+          const list = currentWebauditData.subdomains.slice(0, 30);
+          list.forEach(s => {
+            if (y > 270) { doc.addPage(); y = 20; }
+            doc.text(String(s), 15, y);
+            y += 7;
+          });
+          if (currentWebauditData.subdomains.length > 30) {
+            doc.text(`... y ${currentWebauditData.subdomains.length - 30} subdominios más.`, 15, y);
+            y += 7;
+          }
+        } else {
+          doc.text("No se encontraron subdominios públicos registrados.", 15, y);
+          y += 7;
+        }
+        
+        doc.save(`aegis_webaudit_${currentWebdomain.replace(/\s+/g, '_')}.pdf`);
+      } catch (err) {
+        console.error("Error al exportar reporte PDF de Auditoría Web:", err);
+      }
+    });
   }
 });

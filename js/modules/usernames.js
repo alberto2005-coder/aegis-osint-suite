@@ -369,14 +369,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnExportUsername) {
     btnExportUsername.addEventListener('click', () => {
-      if (currentUsernameResults.length === 0) return;
-      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(currentUsernameResults, null, 2))}`;
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute('href', jsonString);
-      downloadAnchor.setAttribute('download', `osint_usernames_${usernameInput.value.trim()}_${new Date().getTime()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+      try {
+        if (currentUsernameResults.length === 0) return;
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(currentUsernameResults, null, 2))}`;
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute('href', jsonString);
+        downloadAnchor.setAttribute('download', `osint_usernames_${usernameInput.value.trim()}_${new Date().getTime()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      } catch (err) {
+        console.error("Error al exportar JSON de nombres de usuario:", err);
+      }
+    });
+  }
+
+  const btnExportUsernamePdf = document.getElementById('btn-export-username-pdf');
+  if (btnExportUsernamePdf) {
+    btnExportUsernamePdf.addEventListener('click', () => {
+      try {
+        if (currentUsernameResults.length === 0) return;
+        const username = usernameInput.value.trim() || 'usuario';
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Cabecera institucional
+        doc.setFillColor(15, 23, 42); // Navy background
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("AEGIS OSINT SUITE", 15, 25);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("REPORTE DE BÚSQUEDA DE USUARIOS", 15, 33);
+        
+        // Info general
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(11);
+        doc.text(`Objetivo (Nombre de usuario): ${username}`, 15, 50);
+        doc.text(`Fecha del análisis: ${new Date().toLocaleString()}`, 15, 57);
+        
+        let y = 70;
+        doc.setFont("helvetica", "bold");
+        doc.text("Plataforma", 15, y);
+        doc.text("Estado", 85, y);
+        doc.text("Enlace de Perfil", 125, y);
+        doc.line(15, y + 2, 195, y + 2);
+        
+        doc.setFont("helvetica", "normal");
+        y += 8;
+        currentUsernameResults.forEach(res => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(String(res.platform), 15, y);
+          doc.text(String(res.status), 85, y);
+          doc.setFontSize(9);
+          doc.text(String(res.url).substring(0, 45), 125, y);
+          doc.setFontSize(11);
+          y += 8;
+        });
+        
+        doc.save(`aegis_usernames_${username}.pdf`);
+      } catch (err) {
+        console.error("Error al exportar reporte PDF de nombres de usuario:", err);
+      }
     });
   }
 });

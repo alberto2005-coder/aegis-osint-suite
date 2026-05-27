@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const exifWizardCountriesList = document.getElementById('exif-wizard-countries-list');
 
   let exifMapInstance = null;
+  let currentExifData = null;
+  let currentFilename = "";
+  let currentLat = null;
+  let currentLon = null;
 
   // Toggle Wizard panel
   if (btnToggleGeoWizard) {
@@ -180,7 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
     EXIF.getData(file, function() {
       const allMetaData = EXIF.getAllTags(this);
       
+      currentFilename = file.name;
+      currentLat = null;
+      currentLon = null;
+      
       if (!allMetaData || Object.keys(allMetaData).length === 0) {
+        currentExifData = null;
         exifInfoList.innerHTML = `<p style="color: var(--warning-color); font-weight: 500;">No se encontraron etiquetas EXIF en la imagen. Puede que hayan sido borradas o que la imagen no tenga metadatos.</p>`;
         exifInfoContainer.style.display = 'block';
         exifMapCard.style.display = 'none';
@@ -189,16 +198,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      currentExifData = {
+        "Fabricante": allMetaData.Make || 'Desconocido',
+        "Modelo": allMetaData.Model || 'Desconocido',
+        "Fecha/Hora de Captura": allMetaData.DateTimeOriginal || allMetaData.DateTime || 'Desconocido',
+        "Software de Edición": allMetaData.Software || 'Ninguno',
+        "Dimensión de Imagen": `${allMetaData.PixelXDimension || file.width || '?'} x ${allMetaData.PixelYDimension || file.height || '?'} px`,
+        "Exposición": allMetaData.ExposureTime ? (allMetaData.ExposureTime.numerator || allMetaData.ExposureTime) + '/' + (allMetaData.ExposureTime.denominator || 1) + 's' : 'Desconocido',
+        "Apertura": allMetaData.FNumber ? 'f/' + allMetaData.FNumber : 'Desconocido',
+        "ISO": allMetaData.ISOSpeedRatings || 'Desconocido'
+      };
+
       // Populate camera details
       exifInfoList.innerHTML = `
-        <div class="info-item"><span class="info-label">Fabricante</span><span class="info-value">${allMetaData.Make || 'Desconocido'}</span></div>
-        <div class="info-item"><span class="info-label">Modelo</span><span class="info-value">${allMetaData.Model || 'Desconocido'}</span></div>
-        <div class="info-item"><span class="info-label">Fecha/Hora de Captura</span><span class="info-value">${allMetaData.DateTimeOriginal || allMetaData.DateTime || 'Desconocido'}</span></div>
-        <div class="info-item"><span class="info-label">Software de Edición</span><span class="info-value">${allMetaData.Software || 'Ninguno'}</span></div>
-        <div class="info-item"><span class="info-label">Dimensión de Imagen</span><span class="info-value">${allMetaData.PixelXDimension || file.width || '?' } x ${allMetaData.PixelYDimension || file.height || '?' } px</span></div>
-        <div class="info-item"><span class="info-label">Exposición</span><span class="info-value">${allMetaData.ExposureTime ? (allMetaData.ExposureTime.numerator || allMetaData.ExposureTime) + '/' + (allMetaData.ExposureTime.denominator || 1) + 's' : 'Desconocido'}</span></div>
-        <div class="info-item"><span class="info-label">Apertura</span><span class="info-value">${allMetaData.FNumber ? 'f/' + allMetaData.FNumber : 'Desconocido'}</span></div>
-        <div class="info-item"><span class="info-label">ISO</span><span class="info-value">${allMetaData.ISOSpeedRatings || 'Desconocido'}</span></div>
+        <div class="info-item"><span class="info-label">Fabricante</span><span class="info-value">${currentExifData["Fabricante"]}</span></div>
+        <div class="info-item"><span class="info-label">Modelo</span><span class="info-value">${currentExifData["Modelo"]}</span></div>
+        <div class="info-item"><span class="info-label">Fecha/Hora de Captura</span><span class="info-value">${currentExifData["Fecha/Hora de Captura"]}</span></div>
+        <div class="info-item"><span class="info-label">Software de Edición</span><span class="info-value">${currentExifData["Software de Edición"]}</span></div>
+        <div class="info-item"><span class="info-label">Dimensión de Imagen</span><span class="info-value">${currentExifData["Dimensión de Imagen"]}</span></div>
+        <div class="info-item"><span class="info-label">Exposición</span><span class="info-value">${currentExifData["Exposición"]}</span></div>
+        <div class="info-item"><span class="info-label">Apertura</span><span class="info-value">${currentExifData["Apertura"]}</span></div>
+        <div class="info-item"><span class="info-label">ISO</span><span class="info-value">${currentExifData["ISO"]}</span></div>
       `;
 
       // GPS Data parsing
@@ -207,6 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const lon = convertGPS(allMetaData.GPSLongitude, allMetaData.GPSLongitudeRef);
 
         if (lat && lon) {
+          currentLat = lat;
+          currentLon = lon;
           exifInfoList.innerHTML += `
             <div class="info-item" style="border-bottom: none;"><span class="info-label" style="color: var(--cyan-color);">Coordenadas GPS</span><span class="info-value" style="color: var(--cyan-color);">${lat.toFixed(6)}, ${lon.toFixed(6)}</span></div>
           `;
@@ -401,6 +423,62 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       reader.readAsDataURL(file);
+    });
+  }
+
+  const btnExportExifPdf = document.getElementById('btn-export-exif-pdf');
+  if (btnExportExifPdf) {
+    btnExportExifPdf.addEventListener('click', () => {
+      try {
+        if (!currentExifData) return;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Cabecera
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("AEGIS OSINT SUITE", 15, 25);
+        doc.setFontSize(10);
+        doc.text("REPORTE DE METADATOS IMAGEN (EXIF)", 15, 33);
+        
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(11);
+        doc.text(`Archivo analizado: ${currentFilename}`, 15, 50);
+        doc.text(`Fecha del análisis: ${new Date().toLocaleString()}`, 15, 57);
+        
+        let y = 70;
+        doc.setFont("helvetica", "bold");
+        doc.text("Propiedad EXIF", 15, y);
+        doc.text("Valor Detectado", 100, y);
+        doc.line(15, y + 2, 195, y + 2);
+        
+        doc.setFont("helvetica", "normal");
+        y += 8;
+        Object.entries(currentExifData).forEach(([key, val]) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(String(key), 15, y);
+          doc.text(String(val), 100, y);
+          y += 8;
+        });
+        
+        if (currentLat !== null && currentLon !== null) {
+          y += 10;
+          doc.setFont("helvetica", "bold");
+          doc.text("GEOLOCALIZACIÓN GPS:", 15, y);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Latitud, Longitud: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`, 15, y + 8);
+        }
+        
+        doc.save(`aegis_exif_${currentFilename.replace(/\s+/g, '_')}.pdf`);
+      } catch (err) {
+        console.error("Error al exportar reporte PDF de EXIF:", err);
+      }
     });
   }
 });

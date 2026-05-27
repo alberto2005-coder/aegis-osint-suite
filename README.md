@@ -139,3 +139,7 @@ Para garantizar estabilidad operativa y evitar superar límites de memoria en se
 Este proyecto ha sido desarrollado con fines exclusivamente educativos, de aprendizaje y de auditoría de seguridad personal (autorizada). El uso de esta herramienta para realizar actividades maliciosas, espionaje, acoso o accesos no autorizados a sistemas de terceros está estrictamente prohibido y puede ser constitutivo de delito penal. 
 
 El creador de esta herramienta no se hace responsable del uso indebido, ilegal o negligente que terceras personas puedan hacer de este software. La responsabilidad recae única y exclusivamente sobre el usuario final.
+
+
+Este proyecto está bajo la **Licencia Personalizada de Alberto Ortiz**.
+Consulta el archivo `LICENSE` para más detalles.

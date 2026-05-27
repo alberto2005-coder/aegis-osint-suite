@@ -217,4 +217,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial render
   renderHistory();
+
+  // ── CONTROL DE ENRUTADO TOR GLOBAL ──────────────────────────────────────────
+  const globalTorCheckbox = document.getElementById('global-tor-checkbox');
+  const torSwitchLabel = document.getElementById('tor-switch-label-el');
+
+  function updateTorUI(active) {
+    if (active) {
+      torSwitchLabel?.classList.add('active');
+    } else {
+      torSwitchLabel?.classList.remove('active');
+    }
+  }
+
+  // Leer preferencia guardada
+  const isTorEnabled = localStorage.getItem('aegis_tor_enabled') === 'true';
+  if (globalTorCheckbox) {
+    globalTorCheckbox.checked = isTorEnabled;
+    updateTorUI(isTorEnabled);
+
+    globalTorCheckbox.addEventListener('change', (e) => {
+      const active = e.target.checked;
+      localStorage.setItem('aegis_tor_enabled', active);
+      updateTorUI(active);
+      
+      // Sincronizar también el checkbox local de Sherlock si existe y está visible
+      const localTor = document.getElementById('username-use-tor');
+      if (localTor) {
+        localTor.checked = active;
+      }
+    });
+  }
+
+  window.isTorActive = () => {
+    return globalTorCheckbox ? globalTorCheckbox.checked : false;
+  };
 });

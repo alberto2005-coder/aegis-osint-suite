@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         const evaUrl = `https://api.eva.pingutil.com/email?email=${encodeURIComponent(email)}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(evaUrl)}`;
+        const useTor = window.isTorActive?.() ? 'true' : 'false';
+        const proxyUrl = `proxy.php?action=bypass&useTor=${useTor}&url=${encodeURIComponent(evaUrl)}`;
         const response = await fetch(proxyUrl);
         const resData = await response.json();
 

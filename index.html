@@ -154,8 +154,19 @@
     <!-- Main Content Area -->
     <main class="main-content">
       <header class="app-header">
-        <h1 id="tab-title">Buscador de Usuarios (Sherlock)</h1>
-        <p class="tab-subtitle" id="tab-subtitle">Busca coincidencias de cuentas de usuario en decenas de redes sociales y foros.</p>
+        <div>
+          <h1 id="tab-title">Buscador de Usuarios (Sherlock)</h1>
+          <p class="tab-subtitle" id="tab-subtitle">Busca coincidencias de cuentas de usuario en decenas de redes sociales y foros.</p>
+        </div>
+        <div class="tor-switch-container">
+          <label for="global-tor-checkbox" class="tor-switch-label" id="tor-switch-label-el">
+            <i class="fa-solid fa-circle-nodes"></i> Enrutado Tor
+          </label>
+          <label class="tor-switch">
+            <input type="checkbox" id="global-tor-checkbox">
+            <span class="tor-slider"></span>
+          </label>
+        </div>
       </header>
 
       <!-- Username Tab -->

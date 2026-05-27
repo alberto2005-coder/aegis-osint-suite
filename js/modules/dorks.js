@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const batch = paths.slice(i, i + BATCH);
       const results = await Promise.allSettled(batch.map(async (path) => {
         const url = baseUrl + path;
-        const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const useTor = window.isTorActive?.() ? 'true' : 'false';
+        const proxy = `proxy.php?action=bypass&useTor=${useTor}&url=${encodeURIComponent(url)}`;
         const res = await fetch(proxy, { signal: AbortSignal.timeout(6000) });
         const text = await res.text();
         if (checkFn(res.status, text, path)) {

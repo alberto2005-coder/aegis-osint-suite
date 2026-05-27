@@ -480,8 +480,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      // 2. Fallback: Llamada directa a crt.sh utilizando corsproxy.io
-      const corsUrl = `https://corsproxy.io/?${encodeURIComponent(`https://crt.sh/?q=%.${domain}&output=json`)}`;
+      // 2. Fallback: Llamada local al bypass proxy utilizando proxy.php
+      const useTor = window.isTorActive?.() ? 'true' : 'false';
+      const corsUrl = `proxy.php?action=bypass&useTor=${useTor}&url=${encodeURIComponent(`https://crt.sh/?q=%.${domain}&output=json`)}`;
       const res  = await fetch(corsUrl);
       const certs = await res.json();
       const subs  = new Set();
@@ -549,7 +550,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Tech fingerprint via corsproxy.io (patrones precisos) ───
   async function fetchTech(domain) {
     try {
-      const proxy = `https://corsproxy.io/?${encodeURIComponent('https://' + domain)}`;
+      const useTor = window.isTorActive?.() ? 'true' : 'false';
+      const proxy = `proxy.php?action=bypass&useTor=${useTor}&url=${encodeURIComponent('https://' + domain)}`;
       const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
       const html = await res.text();
       const headers = res.headers;

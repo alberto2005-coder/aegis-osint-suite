@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     customProxyInput.value = localStorage.getItem('username_custom_proxy') || '';
   }
 
+  const localTorCheckbox = document.getElementById('username-use-tor');
+  if (localTorCheckbox) {
+    localTorCheckbox.checked = window.isTorActive?.() || false;
+  }
+
   // ── CONFIGURACIÓN DE PLATAFORMAS ──────────────────────────────────────────
   const PLATFORMS = [
     // Social
@@ -219,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // 2. Iniciar conexión SSE con el backend de Sherlock
-      const useTor = document.getElementById('username-use-tor')?.checked ? 'true' : 'false';
+      const useTor = (window.isTorActive?.() || document.getElementById('username-use-tor')?.checked) ? 'true' : 'false';
       const customProxy = customProxyInput ? customProxyInput.value.trim() : '';
       if (customProxyInput) {
         localStorage.setItem('username_custom_proxy', customProxy);

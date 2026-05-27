@@ -358,50 +358,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const base64Image = e.target.result;
 
         try {
-          let response;
+          const headers = {
+            'Content-Type': 'application/json'
+          };
           if (apiKey) {
-            // Direct Client call to Groq API
-            response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-                messages: [
-                  {
-                    role: 'user',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Eres un experto en geolocalización visual y OSINT (inteligencia de fuentes abiertas). Analiza minuciosamente los detalles de esta foto (monumentos conocidos como la Alhambra u otros, arquitectura, vegetación, postes, marcas viales, matrículas, letreros, geología) e intenta identificar monumentos, edificios o accidentes geográficos específicos para precisar la ciudad o punto exacto de la toma. Explica tus deducciones paso a paso de forma clara y estructurada en español y concluye con la localización exacta estimada.'
-                      },
-                      {
-                        type: 'image_url',
-                        image_url: {
-                          url: base64Image
-                        }
-                      }
-                    ]
-                  }
-                ],
-                temperature: 0.2,
-                max_tokens: 1024
-              })
-            });
-          } else {
-            // Server-side call through proxy.php
-            response = await fetch('proxy.php', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                image: base64Image
-              })
-            });
+            headers['X-Groq-API-Key'] = apiKey;
           }
+
+          const response = await fetch('proxy.php?action=groq', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+              image: base64Image
+            })
+          });
 
           const data = await response.json();
 

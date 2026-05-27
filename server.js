@@ -4,8 +4,47 @@ const axios = require('axios');
 const tls = require('tls');
 const net = require('net');
 const path = require('path');
+const dnsPromises = require('dns').promises;
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const { spawn } = require('child_process');
+
+function isPrivateIP(ip) {
+  if (!ip) return true;
+  // IPv4 Loopback, Private, Link-Local, Multicast, 0.0.0.0
+  if (ip.startsWith('127.') || ip.startsWith('10.') || ip.startsWith('169.254.') || ip.startsWith('0.')) return true;
+  if (ip.startsWith('192.168.')) return true;
+  const parts = ip.split('.');
+  if (parts.length === 4) {
+    const first = parseInt(parts[0]);
+    const second = parseInt(parts[1]);
+    if (first === 172 && second >= 16 && second <= 31) return true;
+  }
+  // IPv6
+  const ipLower = ip.toLowerCase();
+  if (ipLower === '::1' || ipLower.startsWith('fe80:') || ipLower.startsWith('fc00:') || ipLower.startsWith('fd00:')) return true;
+  return false;
+}
+
+async function validateTargetHost(host) {
+  try {
+    if (!host) return false;
+    const cleanHost = host.trim().split(':')[0];
+    if (net.isIP(cleanHost)) {
+      return !isPrivateIP(cleanHost);
+    }
+    // Resolve DNS
+    const addresses = await dnsPromises.resolve(cleanHost).catch(async () => {
+      const result = await dnsPromises.lookup(cleanHost);
+      return [result.address];
+    });
+    for (const addr of addresses) {
+      if (isPrivateIP(addr)) return false;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -315,6 +354,61 @@ app.get('/api/sherlock', (req, res) => {
 // Interceptor de proxy.php para no tener que modificar rutas en JS
 app.all('/proxy.php', async (req, res) => {
   const action = req.query.action || 'groq';
+
+  // ── VALIDACIÓN SSRF GLOBAL PARA ENDPOINTS DE RED ──────────
+  if (['check', 'subdomains', 'observatory', 'ports', 'analyze', 'bypass'].includes(action)) {
+    let hostToValidate = '';
+    if (action === 'check' || action === 'bypass') {
+      const targetUrl = req.query.url;
+      if (!targetUrl) return res.status(400).json({ error: 'URL no proporcionada' });
+      try {
+        const parsed = new URL(targetUrl);
+        hostToValidate = parsed.hostname;
+      } catch (e) {
+        return res.status(400).json({ error: 'URL inválida' });
+      }
+    } else if (action === 'subdomains' || action === 'observatory') {
+      hostToValidate = req.query.domain;
+    } else if (action === 'ports') {
+      hostToValidate = req.query.domain || '';
+      hostToValidate = hostToValidate.replace(/^https?:\/\//i, '').split('/')[0];
+    } else if (action === 'analyze') {
+      let rawInput = req.query.url || req.query.domain || '';
+      if (!rawInput) return res.status(400).json({ error: 'Falta URL o Dominio' });
+      if (!/^https?:\/\//i.test(rawInput)) rawInput = 'https://' + rawInput;
+      hostToValidate = rawInput.replace(/^https?:\/\//i, '').split('/')[0];
+    }
+
+    if (hostToValidate) {
+      const allowed = await validateTargetHost(hostToValidate);
+      if (!allowed) {
+        return res.status(403).json({ error: 'Acceso denegado: El destino especificado es privado, inválido o no está permitido (SSRF Protection)' });
+      }
+    }
+  }
+
+  // ── ACCIÓN: bypass (Proxy CORS local con soporte Tor) ─────
+  if (action === 'bypass') {
+    const url = req.query.url;
+    const useTor = req.query.useTor === 'true';
+
+    try {
+      const options = {
+        timeout: 8000,
+        headers: { 'User-Agent': getRandomUA() }
+      };
+      if (useTor) {
+        options.httpAgent = torAgent;
+        options.httpsAgent = torAgent;
+      }
+      const response = await axios.get(url, options);
+      res.setHeader('Content-Type', response.headers['content-type'] || 'text/plain');
+      return res.send(response.data);
+    } catch (e) {
+      const status = e.response?.status || 500;
+      return res.status(status).send(e.response?.data || e.message);
+    }
+  }
 
   // ── ACCIÓN: check (Buscador Sherlock de redes) ────────────
   if (action === 'check') {
@@ -628,8 +722,9 @@ app.all('/proxy.php', async (req, res) => {
     const base64Image = req.body.image;
     if (!base64Image) return res.status(400).json({ error: 'Falta campo image' });
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) return res.status(400).json({ error: { message: 'Clave API de Groq no configurada en Render' } });
+    // Se acepta la API key enviada en el header por motivos de seguridad y descentralización
+    const apiKey = req.headers['x-groq-api-key'] || process.env.GROQ_API_KEY;
+    if (!apiKey) return res.status(400).json({ error: { message: 'Clave API de Groq no configurada' } });
 
     try {
       const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
@@ -637,7 +732,7 @@ app.all('/proxy.php', async (req, res) => {
         messages: [{
           role: 'user',
           content: [
-            { type: 'text', text: 'Eres un experto en geolocalización visual y OSINT. Analiza minuciosamente esta foto e intenta identificar monumentos, arquitectura o geografía específica en español y concluye con la localización exacta.' },
+            { type: 'text', text: 'Eres un experto en geolocalización visual y OSINT (inteligencia de fuentes abiertas). Analiza minuciosamente los detalles de esta foto e intenta identificar monumentos, edificios o accidentes geográficos específicos para precisar la ciudad o punto exacto de la toma. Explica tus deducciones paso a paso de forma clara y estructurada en español y concluye con la localización exacta estimada.' },
             { type: 'image_url', image_url: { url: base64Image } }
           ]
         }],

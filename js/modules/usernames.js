@@ -176,8 +176,12 @@ document.addEventListener('DOMContentLoaded', () => {
         ? PLATFORMS
         : PLATFORMS.filter(p => p.category === activeCategory);
 
-      window.showLoader(`Buscando "${username}" en redes vía Sherlock...`);
-      usernameResultsContainer.style.display = 'none';
+      // En lugar de bloquear la pantalla completa, cambiamos el estado del botón
+      btnScanUsername.disabled = true;
+      btnScanUsername.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Escaneando...';
+      
+      // Mostrar la tabla de resultados de inmediato para ver el avance en tiempo real
+      usernameResultsContainer.style.display = 'block';
       currentUsernameResults = [];
       usernameTableBody.innerHTML = '';
 
@@ -310,7 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             statScanned.textContent = currentUsernameResults.length;
-            window.hideLoader();
+            btnScanUsername.disabled = false;
+            btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
           }
         } catch (err) {
           console.error("Error parseando mensaje de Sherlock:", err);
@@ -332,7 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         statErrors.textContent = errorCount;
-        window.hideLoader();
+        btnScanUsername.disabled = false;
+        btnScanUsername.innerHTML = '<i class="fa-solid fa-radar-chart"></i> Escanear';
       };
 
       if (window.osintSaveHistory) window.osintSaveHistory('username', username);

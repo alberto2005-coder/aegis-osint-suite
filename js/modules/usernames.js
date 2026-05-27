@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? PLATFORMS
         : PLATFORMS.filter(p => p.category === activeCategory);
 
-      window.showLoader(`Escaneando ${platformsToScan.length} plataformas para: "${username}"...`);
+      window.showLoader(`Buscando "${username}" en redes vía Sherlock...`);
       usernameResultsContainer.style.display = 'none';
       currentUsernameResults = [];
       usernameTableBody.innerHTML = '';
@@ -183,44 +183,120 @@ document.addEventListener('DOMContentLoaded', () => {
       statErrors.textContent = '0';
       usernameResultsContainer.style.display = 'block';
 
-      // Procesamiento por lotes (Batches) para no saturar tu backend en Render
-      const batchSize = 3;
-      for (let i = 0; i < platformsToScan.length; i += batchSize) {
-        const batch = platformsToScan.slice(i, i + batchSize);
-        const promises = batch.map(async (platform) => {
-          const result = await verifyUsername(platform, username);
-          const profileUrl = platform.url.replace('{username}', username);
+      // 1. Mostrar las plataformas base como "Buscando..." para feedback inmediato
+      const platformRows = {};
+      platformsToScan.forEach(platform => {
+        const cleanName = platform.name.replace(/[^a-zA-Z0-9]/g, '');
+        const profileUrl = platform.url.replace('{username}', username);
+        const tr = document.createElement('tr');
+        tr.dataset.category = platform.category || 'all';
+        tr.innerHTML = `
+          <td><strong>${platform.icon} ${platform.name}</strong></td>
+          <td><a href="${profileUrl}" target="_blank" class="profile-link"><i class="fa-solid fa-up-right-from-square"></i> ${profileUrl}</a></td>
+          <td><span class="badge badge-warning" id="status-${cleanName}">🔍 Buscando...</span><br><small style="color:#888;font-size:0.75em;">Sherlock OSINT</small></td>
+          <td><button class="btn btn-secondary btn-sm" onclick="window.open('${profileUrl}', '_blank')"><i class="fa-solid fa-external-link"></i> Abrir</button></td>
+        `;
+        usernameTableBody.appendChild(tr);
+        
+        platformRows[platform.name.toLowerCase()] = {
+          element: tr,
+          statusSpan: tr.querySelector(`#status-${cleanName}`),
+          url: profileUrl,
+          icon: platform.icon,
+          category: platform.category,
+          updated: false
+        };
+      });
 
-          if (result.exists === true) {
+      // 2. Iniciar conexión SSE con el backend de Sherlock
+      const eventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}`);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.status === 'found') {
+            const platName = data.platform.toLowerCase();
+            const resultObj = {
+              platform: data.platform,
+              category: 'social',
+              url: data.url,
+              status: '✅ Encontrado',
+              method: 'Sherlock OSINT',
+              icon: '🌐'
+            };
+
+            // Si es una de las plataformas de la lista base, la actualizamos
+            if (platformRows[platName]) {
+              platformRows[platName].statusSpan.className = 'badge badge-success';
+              platformRows[platName].statusSpan.textContent = '✅ Encontrado';
+              platformRows[platName].updated = true;
+              resultObj.category = platformRows[platName].category;
+              resultObj.icon = platformRows[platName].icon;
+            } else {
+              // Si es una plataforma adicional encontrada, la creamos al vuelo
+              const tr = document.createElement('tr');
+              tr.dataset.category = 'social';
+              tr.innerHTML = `
+                <td><strong>🌐 ${data.platform}</strong></td>
+                <td><a href="${data.url}" target="_blank" class="profile-link"><i class="fa-solid fa-up-right-from-square"></i> ${data.url}</a></td>
+                <td><span class="badge badge-success">✅ Encontrado</span><br><small style="color:#888;font-size:0.75em;">Sherlock OSINT</small></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="window.open('${data.url}', '_blank')"><i class="fa-solid fa-external-link"></i> Abrir</button></td>
+              `;
+              usernameTableBody.appendChild(tr);
+            }
+
+            currentUsernameResults.push(resultObj);
             foundCount++;
-          } else if (result.exists === null) {
-            errorCount++;
+            statFound.textContent = foundCount;
           }
 
-          const resultObj = {
-            platform: platform.name,
-            category: platform.category,
-            url: profileUrl,
-            status: result.status,
-            method: result.method,
-            icon: platform.icon
-          };
+          if (data.status === 'done') {
+            eventSource.close();
 
-          currentUsernameResults.push(resultObj);
-          appendUsernameRow(resultObj);
+            // 3. Todo lo que no se haya encontrado, se marca como No Encontrado
+            Object.keys(platformRows).forEach(key => {
+              if (!platformRows[key].updated) {
+                platformRows[key].statusSpan.className = 'badge badge-error';
+                platformRows[key].statusSpan.textContent = '❌ No Encontrado';
+                
+                currentUsernameResults.push({
+                  platform: key.charAt(0).toUpperCase() + key.slice(1),
+                  category: platformRows[key].category,
+                  url: platformRows[key].url,
+                  status: '❌ No Encontrado',
+                  method: 'Sherlock OSINT',
+                  icon: platformRows[key].icon
+                });
+              }
+            });
 
-          statScanned.textContent = currentUsernameResults.length;
-          statFound.textContent = foundCount;
-          statErrors.textContent = errorCount;
+            statScanned.textContent = currentUsernameResults.length;
+            window.hideLoader();
+          }
+        } catch (err) {
+          console.error("Error parseando mensaje de Sherlock:", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("Error en conexión EventSource con Sherlock:", err);
+        eventSource.close();
+
+        // Si falla la conexión, marcamos las pendientes como omitidas
+        Object.keys(platformRows).forEach(key => {
+          if (!platformRows[key].updated) {
+            platformRows[key].statusSpan.className = 'badge badge-error';
+            platformRows[key].statusSpan.textContent = '❌ Error / Omitido';
+            errorCount++;
+          }
         });
 
-        await Promise.all(promises);
-        // Espera de cortesía entre lotes
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+        statErrors.textContent = errorCount;
+        window.hideLoader();
+      };
 
       if (window.osintSaveHistory) window.osintSaveHistory('username', username);
-      window.hideLoader();
     });
   }
 

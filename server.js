@@ -5,6 +5,7 @@ const tls = require('tls');
 const net = require('net');
 const path = require('path');
 const { SocksProxyAgent } = require('socks-proxy-agent');
+const { spawn } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -88,6 +89,90 @@ function getSSLCert(host) {
     });
   });
 }
+
+// ── ENDPOINT: /api/sherlock (Server-Sent Events) ───────────
+app.get('/api/sherlock', (req, res) => {
+  const username = req.query.username;
+  if (!username) return res.status(400).json({ error: 'Username es requerido' });
+
+  // Validar username básico para evitar inyección de comandos
+  if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) {
+    return res.status(400).json({ error: 'Username contiene caracteres inválidos' });
+  }
+
+  // Configurar cabeceras de Server-Sent Events (SSE)
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  console.log(`[Sherlock Node] Iniciando escaneo de: ${username}`);
+
+  // Intentamos ejecutar el comando "sherlock" global
+  let sherlockProcess;
+  try {
+    sherlockProcess = spawn('sherlock', [username, '--timeout', '5', '--print-found']);
+  } catch (e) {
+    console.warn("Comando sherlock directo no disponible, intentando con python3...");
+    sherlockProcess = spawn('python3', ['/usr/src/sherlock/sherlock', username, '--timeout', '5', '--print-found']);
+  }
+
+  sherlockProcess.stdout.on('data', (data) => {
+    const output = data.toString();
+    const lines = output.split('\n');
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (cleanLine.startsWith('[+]')) {
+        // Encontrado: [+] PlatformName: URL
+        const match = cleanLine.match(/^\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
+        if (match) {
+          const platform = match[1].trim();
+          const url = match[2].trim();
+          res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+        }
+      }
+    }
+  });
+
+  sherlockProcess.stderr.on('data', (data) => {
+    console.error(`[Sherlock Error]: ${data.toString()}`);
+  });
+
+  sherlockProcess.on('close', (code) => {
+    console.log(`[Sherlock Node] Escaneo terminado con código: ${code}`);
+    res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
+    res.end();
+  });
+
+  sherlockProcess.on('error', (err) => {
+    console.error("Error al arrancar Sherlock, intentando con python3 directo...", err);
+    try {
+      const fallback = spawn('python3', ['/usr/src/sherlock/sherlock/sherlock.py', username, '--timeout', '5', '--print-found']);
+      fallback.stdout.on('data', (data) => {
+        const output = data.toString();
+        const lines = output.split('\n');
+        for (const line of lines) {
+          const cleanLine = line.trim();
+          if (cleanLine.startsWith('[+]')) {
+            const match = cleanLine.match(/^\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
+            if (match) {
+              const platform = match[1].trim();
+              const url = match[2].trim();
+              res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
+            }
+          }
+        }
+      });
+      fallback.on('close', () => {
+        res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
+        res.end();
+      });
+    } catch (fallbackErr) {
+      res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
+      res.end();
+    }
+  });
+});
 
 // Interceptor de proxy.php para no tener que modificar rutas en JS
 app.all('/proxy.php', async (req, res) => {

@@ -9,7 +9,7 @@ Aegis OSINT Suite es una plataforma web modular premium de ciberinteligencia, re
 2. [Arquitectura del Proyecto](#-arquitectura-del-proyecto)
 3. [Instalación y Uso en Local (Node.js)](#-instalación-y-uso-en-local-nodejs)
 4. [Uso con Docker](#-uso-con-docker)
-5. [Despliegue en la Nube (Render.com)](#-despliegue-en-la-nube-rendercom)
+5. [Despliegue en la Nube](#-despliegue-en-la-nube)
 6. [Prevención de Fugas de Memoria (Watchdog)](#-prevención-de-fugas-de-memoria-watchdog)
 7. [Tecnologías Utilizadas](#-tecnologías-utilizadas)
 
@@ -122,17 +122,50 @@ El proyecto incluye un `Dockerfile` optimizado basado en Alpine Linux que incluy
 
 ---
 
-## ☁️ Despliegue en la Nube (Render.com)
+## ☁️ Despliegue en la Nube
 
-Aegis OSINT Suite está configurado para desplegarse fácilmente en **Render**:
+El proyecto es totalmente compatible con múltiples servicios de alojamiento en la nube, ya que gestiona de manera dinámica el puerto mediante la variable de entorno `PORT` (`process.env.PORT || 3000`).
 
-1. Crea un nuevo **Web Service** en tu panel de Render.
-2. Conecta tu repositorio de GitHub.
-3. Configura los siguientes parámetros en Render:
-   * **Runtime**: `Node`
-   * **Build Command**: `npm install`
-   * **Start Command**: `npm start`
-4. Render iniciará automáticamente la aplicación. El código del servidor detecta el puerto dinámico (`process.env.PORT`) y expone la aplicación.
+### Opción A: Plataformas PaaS (Render, Railway, Fly.io, Heroku)
+Estas plataformas permiten desplegar el código directamente conectando tu repositorio de GitHub:
+
+1. Crea un nuevo servicio web (Web Service) en el panel de tu plataforma.
+2. Conecta el repositorio del proyecto.
+3. Define los siguientes parámetros de ejecución:
+   * **Entorno (Runtime)**: `Node` (versión 18 o superior)
+   * **Comando de Construcción (Build Command)**: `npm install`
+   * **Comando de Arranque (Start Command)**: `npm start`
+4. Si la plataforma soporta despliegues basados en Docker (como **Fly.io** o **Railway**), puedes seleccionar la opción de desplegar usando el `Dockerfile` adjunto, lo cual configurará de forma automatizada el entorno de Python y el servicio Tor.
+
+### Opción B: Despliegue en VPS (Ubuntu, Debian) mediante PM2
+Para desplegar de manera persistente en tu propio servidor virtual privado (VPS):
+
+1. Conéctate a tu VPS y clona el repositorio:
+   ```bash
+   git clone https://github.com/tu-usuario/aegis-osint-suite.git
+   cd aegis-osint-suite
+   ```
+2. Instala Node.js, Python, Tor y el gestor de procesos `pm2`:
+   ```bash
+   sudo apt update
+   sudo apt install -y nodejs npm python3 python3-pip tor
+   sudo npm install -g pm2
+   ```
+3. Instala Sherlock de manera global en el VPS:
+   ```bash
+   python3 -m pip install sherlock-project
+   ```
+4. Inicia la aplicación con PM2 para asegurar que corra en segundo plano y se reinicie ante fallos:
+   ```bash
+   pm2 start server.js --name "aegis-osint"
+   pm2 save
+   pm2 startup
+   ```
+
+### Opción C: Servicios de Contenedores (GCP Cloud Run, AWS ECS, DigitalOcean)
+Puedes empaquetar y subir el contenedor usando el `Dockerfile` provisto:
+* **DigitalOcean App Platform**: Selecciona "Deploy from Docker Image" y asocia tu repositorio.
+* **Google Cloud Run**: Sube la imagen a Artifact Registry y arráncala exponiendo el puerto `3000`. El contenedor autoejecutará el demonio de Tor y levantará el servidor Node.js en paralelo.
 
 ---
 

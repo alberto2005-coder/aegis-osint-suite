@@ -1,0 +1,17 @@
+{
+  "name": "aegis-osint-suite",
+  "version": "1.2.0",
+  "description": "OSINT Suite with Tor routing",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "express": "^4.19.2",
+    "socks-proxy-agent": "^8.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

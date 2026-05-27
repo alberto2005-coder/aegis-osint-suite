@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis OSINT Suite</title>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <!-- Leaflet Map CSS/JS (CORS-friendly open maps) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Exif.js Library for image metadata extraction in frontend -->
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+  <!-- App Icon / Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <!-- Marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    /* ── Category chips (Sherlock) ────────────────────────────── */
+    .category-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .category-chip {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      padding: 0.3rem 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-main);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .category-chip:hover {
+      background: rgba(139,92,246,0.12);
+      border-color: var(--accent-color);
+      color: var(--text-primary);
+    }
+    .category-chip.active {
+      background: rgba(139,92,246,0.2);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+    .chip-count {
+      background: rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 0 6px;
+      font-size: 0.7rem;
+    }
+    .category-chip.active .chip-count {
+      background: rgba(139,92,246,0.25);
+    }
+    /* ── History pills in sidebar ─────────────────────────────── */
+    #sidebar-history {
+      margin-top: 0.5rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 0.75rem;
+    }
+    /* ── EXIF clean button ────────────────────────────────────── */
+    #btn-exif-clean-download {
+      display: none;
+      margin-top: 1rem;
+      background: rgba(16,185,129,0.1);
+      border-color: var(--success-color);
+      color: var(--success-color);
+      width: 100%;
+      justify-content: center;
+    }
+    #btn-exif-clean-download:hover {
+      background: rgba(16,185,129,0.2);
+    }
+    /* ── Email route map ──────────────────────────────────────── */
+    #header-map-card {
+      display: none;
+      margin-top: 1.5rem;
+    }
+    #header-route-map {
+      height: 280px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="favicon.png" alt="Aegis Logo" style="height: 32px; width: 32px; border-radius: 6px; box-shadow: 0 0 10px var(--accent-glow);">
+        <span>AEGIS <span class="accent-text">OSINT</span></span>
+      </div>
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="username-tab">
+          <i class="fa-solid fa-user"></i> <span>Usuarios (Sherlock)</span>
+        </button>
+        <button class="nav-item" data-tab="email-tab">
+          <i class="fa-solid fa-envelope"></i> <span>Correos</span>
+        </button>
+        <button class="nav-item" data-tab="domain-tab">
+          <i class="fa-solid fa-globe"></i> <span>Dominios / IPs</span>
+        </button>
+        <button class="nav-item" data-tab="phone-tab">
+          <i class="fa-solid fa-phone"></i> <span>Teléfonos</span>
+        </button>
+        <button class="nav-item" data-tab="name-face-tab">
+          <i class="fa-solid fa-id-card"></i> <span>Nombres y Rostros</span>
+        </button>
+        <button class="nav-item" data-tab="exif-tab">
+          <i class="fa-solid fa-image"></i> <span>Metadatos EXIF</span>
+        </button>
+        <button class="nav-item" data-tab="header-tab">
+          <i class="fa-solid fa-file-code"></i> <span>Cabeceras Email</span>
+        </button>
+        <button class="nav-item" data-tab="pdf-tab">
+          <i class="fa-solid fa-file-pdf"></i> <span>OSINT de PDF</span>
+        </button>
+        <button class="nav-item" data-tab="linux-tab">
+          <i class="fa-brands fa-linux"></i> <span>Comandos Linux</span>
+        </button>
+        <button class="nav-item" data-tab="dorks-tab">
+          <i class="fa-solid fa-magnifying-glass-plus"></i> <span>Google Dorks</span>
+        </button>
+        <button class="nav-item" data-tab="webaudit-tab">
+          <i class="fa-solid fa-shield-halved"></i> <span>Auditoría Web</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <p>Aegis Suite v1.1.0</p>
+        <span class="status-indicator" style="color: var(--cyan-color);"><span class="dot" style="background-color: var(--cyan-color); box-shadow: 0 0 8px var(--cyan-glow);"></span> Front-End Mode</span>
+      </div>
+      <!-- Historial de búsquedas recientes -->
+      <div id="sidebar-history"></div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="app-header">
+        <h1 id="tab-title">Buscador de Usuarios (Sherlock)</h1>
+        <p class="tab-subtitle" id="tab-subtitle">Busca coincidencias de cuentas de usuario en decenas de redes sociales y foros.</p>
+      </header>
+
+      <!-- Username Tab -->
+      <section id="username-tab" class="tab-panel active">
+        <div class="glass-card search-card">
+          <div class="search-group">
+            <i class="fa-solid fa-at search-icon"></i>
+            <input type="text" id="username-input" placeholder="Introduce el nombre de usuario a buscar (ej: john_doe)">
+            <button class="btn btn-primary" id="btn-scan-username">
+              <i class="fa-solid fa-radar-chart"></i> Escanear
+            </button>
+          </div>
+          <!-- Filtro por categorías -->
+          <div class="category-chips-row" id="username-category-chips" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);"></div>
+        </div>
+
+        <div class="results-container" id="username-results-container" style="display: none;">
+          <div class="results-stats">
+            <div class="stat-card">
+              <span class="stat-value" id="stat-scanned">0</span>
+              <span class="stat-label">Escaneados</span>
+            </div>
+            <div class="stat-card accent">
+              <span class="stat-value" id="stat-found">0</span>
+              <span class="stat-label">Encontrados</span>
+            </div>
+            <div class="stat-card error">
+              <span class="stat-value" id="stat-errors">0</span>
+              <span class="stat-label">Fallidos / Omitidos</span>
+            </div>
+          </div>
+
+          <div class="glass-card results-table-wrapper">
+            <div class="table-header">
+              <h3>Plataformas Detectadas</h3>
+              <div class="table-actions">
+                <input type="text" id="username-filter" placeholder="Filtrar plataforma...">
+                <button class="btn btn-secondary btn-sm" id="btn-export-username">
+                  <i class="fa-solid fa-file-export"></i> Exportar
+                </button>
+              </div>
+            </div>
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Plataforma</th>
+                  <th>Enlace del Perfil</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="username-table-body">
+                <!-- Dynamic Results -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Email Tab -->
+      <section id="email-tab" class="tab-panel">
+        <div class="glass-card search-card">
+          <div class="search-group">
+            <i class="fa-solid fa-envelope search-icon"></i>
+            <input type="email" id="email-input" placeholder="ejemplo@correo.com">
+            <button class="btn btn-primary" id="btn-scan-email">Escanear Correo</button>
+          </div>
+        </div>
+
+        <div class="results-container" id="email-results-container" style="display: none;">
+          <div class="grid-2col">
+            <div class="glass-card">
+              <h3><i class="fa-solid fa-circle-info"></i> Información del Servidor</h3>
+              <div class="info-list" id="email-info-list">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+            <div class="glass-card">
+              <h3><i class="fa-solid fa-database"></i> Motores de Filtraciones (Breaches)</h3>
+              <p class="card-desc">Búsqueda rápida en bases de datos de credenciales filtradas externas:</p>
+              <div class="links-grid" id="email-links-grid">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+          </div>
+          <div class="glass-card margin-top">
+            <h3><i class="fa-solid fa-lightbulb"></i> Pasos y Sugerencias de Investigación</h3>
+            <ul class="suggestions-list" id="email-suggestions-list">
+              <!-- Filled dynamically -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Domain / IP Tab -->
+      <section id="domain-tab" class="tab-panel">
+        <div class="glass-card search-card">
+          <div class="search-group">
+            <i class="fa-solid fa-globe search-icon"></i>
+            <input type="text" id="domain-input" placeholder="ejemplo.com o 8.8.8.8">
+            <button class="btn btn-primary" id="btn-scan-domain">Analizar Target</button>
+          </div>
+        </div>
+
+        <div class="results-container" id="domain-results-container" style="display: none;">
+          <div class="grid-2col">
+            <!-- GeoIP Card -->
+            <div class="glass-card" id="geoip-card" style="display: none;">
+              <h3><i class="fa-solid fa-map-location-dot"></i> Geolocalización de IP</h3>
+              <div class="info-list" id="geoip-info-list">
+                <!-- Filled dynamically -->
+              </div>
+              <div id="ip-map"></div>
+            </div>
+            <!-- DNS Card -->
+            <div class="glass-card" id="dns-card" style="display: none;">
+              <h3><i class="fa-solid fa-server"></i> Registros DNS del Dominio</h3>
+              <div class="dns-records-wrapper" id="dns-records-list">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+          </div>
+          <!-- WHOIS quick-links -->
+          <div class="glass-card margin-top">
+            <h3><i class="fa-solid fa-fingerprint"></i> WHOIS & Enlaces Externos</h3>
+            <div class="links-row" id="domain-links-row">
+              <!-- Filled dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Phone Tab -->
+      <section id="phone-tab" class="tab-panel">
+        <div class="glass-card search-card">
+          <div class="search-group">
+            <i class="fa-solid fa-phone search-icon"></i>
+            <input type="text" id="phone-input" placeholder="+34 600 000 000">
+            <button class="btn btn-primary" id="btn-scan-phone">Investigar Teléfono</button>
+          </div>
+        </div>
+
+        <div class="results-container" id="phone-results-container" style="display: none;">
+          <div class="grid-2col">
+            <div class="glass-card">
+              <h3><i class="fa-solid fa-mobile-screen"></i> Datos del Número</h3>
+              <div class="info-list" id="phone-info-list">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+            <div class="glass-card">
+              <h3><i class="fa-solid fa-address-book"></i> Directorios & Redes Sociales</h3>
+              <div class="links-grid" id="phone-links-grid">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+          </div>
+          <div class="glass-card margin-top">
+            <h3><i class="fa-solid fa-user-shield"></i> Sugerencias de OSINT para Teléfonos</h3>
+            <ul class="suggestions-list" id="phone-suggestions-list">
+              <!-- Filled dynamically -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Name & Face Tab -->
+      <section id="name-face-tab" class="tab-panel">
+        <div class="grid-2col">
+          <!-- Name Search Card -->
+          <div class="glass-card">
+            <h3><i class="fa-solid fa-user-tag"></i> Búsqueda por Nombre Real</h3>
+            <p class="card-desc">Genera enlaces directos para buscar personas en directorios públicos y redes sociales.</p>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <div class="input-group">
+                <label for="name-input">Nombre(s)</label>
+                <input type="text" id="name-input" placeholder="Ej. Juan">
+              </div>
+              <div class="input-group">
+                <label for="lastname-input">Apellidos</label>
+                <input type="text" id="lastname-input" placeholder="Ej. Pérez García">
+              </div>
+              <button class="btn btn-primary" id="btn-scan-name">Generar Enlaces de Búsqueda</button>
+            </div>
+
+            <div class="results-container" id="name-results-container" style="display: none; margin-top: 1.5rem;">
+              <h4>Enlaces de Búsqueda Generados:</h4>
+              <div class="links-grid" id="name-links-grid" style="margin-top: 1rem;">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Face Search Card -->
+          <div class="glass-card">
+            <h3><i class="fa-solid fa-eye"></i> Motores de Reconocimiento Facial</h3>
+            <p class="card-desc">Enlaces directos a las mejores herramientas mundiales especializadas en búsqueda inversa de imágenes y rostros:</p>
+            
+            <div class="links-grid" style="margin-top: 1rem;">
+              <a href="https://pimeyes.com/" target="_blank" class="osint-link-btn">
+                <i class="fa-solid fa-expand"></i>
+                <span>PimEyes</span>
+                <small>Buscador facial extremadamente preciso (Pago/Demo)</small>
+              </a>
+              <a href="https://facecheck.id/" target="_blank" class="osint-link-btn">
+                <i class="fa-solid fa-user-astronaut"></i>
+                <span>FaceCheck.ID</span>
+                <small>Buscar caras contra redes y bases de datos</small>
+              </a>
+              <a href="https://yandex.com/images/" target="_blank" class="osint-link-btn">
+                <i class="fa-solid fa-compass"></i>
+                <span>Yandex Images</span>
+                <small>El mejor motor de reconocimiento facial gratuito</small>
+              </a>
+              <a href="https://lens.google/" target="_blank" class="osint-link-btn">
+                <i class="fa-solid fa-camera"></i>
+                <span>Google Lens</span>
+                <small>Búsqueda inversa general de Google</small>
+              </a>
+            </div>
+            
+            <div class="info-list margin-top">
+              <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; border-bottom: none;">
+                <span class="info-label" style="color: var(--cyan-color);"><i class="fa-solid fa-circle-info"></i> Metodología OSINT recomendada</span>
+                <small style="color: var(--text-secondary); line-height: 1.4;">
+                  1. Abre **Yandex Images** (excelente para perfiles en Europa/Rusia) o **PimEyes** (para internet global).<br>
+                  2. Sube la foto del rostro del objetivo.<br>
+                  3. Analiza los resultados para encontrar otras redes sociales o fotos de prensa donde aparezca la misma persona.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      </section>
+
+      <!-- EXIF Metadata Tab -->
+      <section id="exif-tab" class="tab-panel">
+        <div class="grid-2col">
+          <div class="glass-card">
+            <h3><i class="fa-solid fa-camera"></i> Extractor de Metadatos EXIF</h3>
+            <p class="card-desc">Sube o arrastra una imagen (JPEG/JPG) para extraer datos ocultos del dispositivo y coordenadas GPS.</p>
+            
+            <div class="image-drop-zone" id="exif-drop-zone">
+              <i class="fa-solid fa-image-portrait" style="font-size: 2.5rem; color: var(--accent-color); margin-bottom: 0.5rem;"></i>
+              <p>Arrastra una foto aquí o haz clic para subir</p>
+              <input type="file" id="exif-image-input" accept="image/jpeg, image/jpg" style="display: none;">
+              <img id="exif-preview" src="" alt="Vista previa EXIF" style="display: none; max-width: 100%; max-height: 150px; border-radius: 8px; margin-top: 0.5rem; object-fit: contain;">
+            </div>
+
+            <div class="results-container" id="exif-info-container" style="display: none; margin-top: 1.5rem;">
+              <h4>Datos de la Cámara y Archivo:</h4>
+              <div class="info-list" id="exif-info-list" style="margin-top: 1rem;">
+                <!-- Dynamically filled -->
+              </div>
+              <!-- Botón limpiador EXIF -->
+              <button class="btn btn-secondary" id="btn-exif-clean-download">
+                <i class="fa-solid fa-eraser"></i> Descargar imagen limpia (sin EXIF / OPSEC)
+              </button>
+            </div>
+          </div>
+
+          <div class="glass-card" id="exif-map-card" style="display: none;">
+            <h3><i class="fa-solid fa-map-location-dot"></i> Ubicación de la Foto (GPS)</h3>
+            <p class="card-desc">Mapa interactivo con las coordenadas geográficas extraídas de la imagen.</p>
+            <div id="exif-map" style="height: 250px; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border-color);"></div>
+          </div>
+
+          <!-- Visual Geolocation Fallbacks (Shown when no GPS is found) -->
+          <div class="glass-card" id="exif-no-gps-card" style="display: none;">
+            <h3><i class="fa-solid fa-earth-americas"></i> Geolocalización Alternativa</h3>
+            <p class="card-desc">No se encontraron coordenadas GPS en la imagen. Puedes intentar geolocalizarla usando IA externa o nuestro asistente de pistas visuales.</p>
+            
+            <div class="links-grid" style="margin-bottom: 1.5rem;">
+              <a href="https://geospy.ai/" target="_blank" class="osint-link-btn" style="border: 1px solid var(--accent); background: rgba(139, 92, 246, 0.05);">
+                <i class="fa-solid fa-brain"></i>
+                <span>GeoSpy.ai</span>
+                <small>IA de geolocalización visual automática</small>
+              </a>
+              <a href="https://yandex.com/images/" target="_blank" class="osint-link-btn">
+                <i class="fa-solid fa-images"></i>
+                <span>Yandex Images</span>
+                <small>Búsqueda inversa de paisajes y fondos</small>
+              </a>
+            </div>
+
+            <!-- Groq Vision AI Integration -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.25rem; margin-bottom: 1.5rem;">
+              <h4 style="color: var(--accent-color); margin-bottom: 0.5rem;"><i class="fa-solid fa-robot"></i> Geolocalización con Groq Vision (Gratis)</h4>
+              <p class="card-desc" style="margin-bottom: 1rem;">Introduce tu API Key de Groq y usa Llama 3.2 Vision para estimar la ubicación basándose en la imagen.</p>
+              
+              <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="input-group">
+                  <label for="groq-key">Clave API de Groq</label>
+                  <div style="display: flex; gap: 0.5rem; width: 100%;">
+                    <input type="password" id="groq-key" placeholder="gsk_..." style="flex-grow: 1;">
+                    <button class="btn btn-secondary" id="btn-scan-groq" style="background: rgba(139, 92, 246, 0.1); border-color: var(--accent-color); color: white;">
+                      <i class="fa-solid fa-eye-low-vision"></i> Analizar con IA
+                    </button>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" id="save-groq-key" style="width: 16px; height: 16px; accent-color: var(--accent-color);">
+                  <label for="save-groq-key" style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">Recordar clave API en este navegador</label>
+                </div>
+              </div>
+
+              <!-- Groq Output -->
+              <div id="exif-groq-results" style="display: none; margin-top: 1.5rem; background: rgba(0, 0, 0, 0.3); border: 1px dashed var(--accent-color); border-radius: 10px; padding: 1.25rem; animation: fadeIn 0.3s;">
+                <h5 style="color: var(--accent-color); margin-bottom: 0.5rem;"><i class="fa-solid fa-microchip"></i> Análisis de la IA (Llama 3.2 Vision)</h5>
+                <p id="exif-groq-response" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap;"></p>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="btn-toggle-geo-wizard" style="width: 100%; justify-content: center; margin-bottom: 1rem;">
+              <i class="fa-solid fa-map-pin"></i> Abrir Asistente de Pistas Visuales
+            </button>
+
+            <!-- Wizard Cuestionario (Hidden by default) -->
+            <div id="exif-geo-wizard" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+              <h4 style="margin-bottom: 1rem; color: var(--cyan-color);"><i class="fa-solid fa-list-check"></i> Cuestionario de Pistas Visuales</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="input-group">
+                  <label for="wizard-drive">1. Sentido de circulación de vehículos</label>
+                  <select id="wizard-drive">
+                    <option value="any">No se aprecia / Desconocido</option>
+                    <option value="right">Conducen por la DERECHA (Volante a la izquierda)</option>
+                    <option value="left">Conducen por la IZQUIERDA (Volante a la derecha)</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label for="wizard-plate">2. Formato de matrículas de coches</label>
+                  <select id="wizard-plate">
+                    <option value="any">No se aprecia / Estándar blanca</option>
+                    <option value="euro">Banda azul a la izquierda (Unión Europea)</option>
+                    <option value="yellow-rear">Matrícula trasera amarilla, delantera blanca (Reino Unido, Países Bajos)</option>
+                    <option value="yellow-both">Ambas matrículas amarillas (Israel, Luxemburgo, Colombia comercial)</option>
+                    <option value="us">Cortas y cuadradas (EEUU, Canadá, México, Japón)</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label for="wizard-alphabet">3. Idioma o Alfabeto en letreros/carteles</label>
+                  <select id="wizard-alphabet">
+                    <option value="any">No se aprecia</option>
+                    <option value="latin">Alfabeto Latín (Español, Inglés, Francés, Alemán, etc.)</option>
+                    <option value="cyrillic">Alfabeto Cirílico (Rusia, Ucrania, Bulgaria, Serbia)</option>
+                    <option value="arabic">Alfabeto Árabe / Persa</option>
+                    <option value="greek">Griego</option>
+                    <option value="thai">Tailandés / Camboyano</option>
+                    <option value="cjk">Caracteres Asiáticos (Chino, Japonés, Coreano)</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label for="wizard-lines">4. Color de las líneas exteriores de la carretera</label>
+                  <select id="wizard-lines">
+                    <option value="any">No se aprecia / Blanco general</option>
+                    <option value="yellow-outer">Líneas exteriores amarillas (Sudáfrica, Chile, Israel, etc.)</option>
+                    <option value="yellow-center">Líneas centrales amarillas, exteriores blancas (EEUU, Canadá, Brasil, etc.)</option>
+                  </select>
+                </div>
+
+                <button class="btn btn-secondary" id="btn-calculate-geo-wizard" style="justify-content: center; background: rgba(0, 240, 255, 0.05); border-color: var(--cyan-color); color: var(--cyan-color);">
+                  <i class="fa-solid fa-compass"></i> Estimar Ubicación
+                </button>
+              </div>
+
+              <!-- Wizard Results -->
+              <div id="exif-wizard-results" style="display: none; margin-top: 1.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem;">
+                <h5 style="color: var(--success-color); margin-bottom: 0.5rem;"><i class="fa-solid fa-circle-check"></i> Estimación de Países</h5>
+                <div id="exif-wizard-countries-list" class="info-list" style="margin-top: 0.5rem; gap: 0.75rem;">
+                  <!-- Filled dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Email Headers Analyzer Tab -->
+      <section id="header-tab" class="tab-panel">
+        <div class="glass-card">
+          <h3><i class="fa-solid fa-file-code"></i> Analizador de Cabeceras de Correo</h3>
+          <p class="card-desc">Pega la cabecera completa (headers) de un correo para rastrear la IP del remitente original y el estado de entrega.</p>
+          
+          <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+            <textarea id="header-input" rows="8" placeholder="Pega las cabeceras del correo aquí (ej. Received: from...)" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary); padding: 1rem; font-family: monospace; font-size: 0.9rem; resize: vertical; outline: none;"></textarea>
+            <button class="btn btn-primary" id="btn-analyze-headers">Analizar Cabeceras</button>
+          </div>
+
+          <div class="results-container" id="header-results-container" style="display: none;">
+            <div class="grid-2col">
+              <div>
+                <h4><i class="fa-solid fa-info-circle"></i> Análisis General:</h4>
+                <div class="info-list" id="header-info-list" style="margin-top: 1rem;">
+                  <!-- Dynamically filled -->
+                </div>
+              </div>
+              <div>
+                <h4><i class="fa-solid fa-route"></i> Ruta de Servidores (Received hops):</h4>
+                <div id="header-hops-list" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- Dynamically filled -->
+                </div>
+              </div>
+            </div>
+            <!-- Mapa de ruta de correo -->
+            <div class="glass-card" id="header-map-card" style="margin-top: 1.5rem;">
+              <h3><i class="fa-solid fa-earth-americas"></i> Ruta Geográfica del Correo</h3>
+              <p class="card-desc">Geolocalización de cada IP en los saltos de servidor. <span style="color: #10b981;">&#9679;</span> Destino final &nbsp; <span style="color: #ef4444;">&#9679;</span> Origen &nbsp; <span style="color: #06b6d4;">&#9679;</span> Intermediario</p>
+              <div id="header-route-map"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PDF OSINT Tab -->
+      <section id="pdf-tab" class="tab-panel">
+        <div class="glass-card">
+          <h3><i class="fa-solid fa-file-pdf"></i> Análisis OSINT de Documentos PDF</h3>
+          <p class="card-desc">Arrastra un archivo PDF para leer y analizar sus metadatos internos expuestos (Autor, software, fecha de creación).</p>
+          
+          <div class="image-drop-zone" id="pdf-drop-zone" style="margin-bottom: 1.5rem;">
+            <i class="fa-solid fa-file-circle-check" style="font-size: 2.5rem; color: var(--cyan-color); margin-bottom: 0.5rem;"></i>
+            <p>Arrastra tu archivo PDF aquí o haz clic para cargarlo</p>
+            <input type="file" id="pdf-file-input" accept="application/pdf" style="display: none;">
+            <p id="pdf-file-name" style="font-weight: 600; color: var(--cyan-color); display: none; margin-top: 0.5rem;"></p>
+          </div>
+
+          <div class="results-container" id="pdf-results-container" style="display: none;">
+            <h4>Metadatos Encontrados en el Documento:</h4>
+            <div class="info-list" id="pdf-info-list" style="margin-top: 1rem; max-width: 600px;">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Linux Commands Tab -->
+      <section id="linux-tab" class="tab-panel">
+        <div class="glass-card">
+          <h3><i class="fa-brands fa-linux"></i> Cheat Sheet & Generador de Comandos OSINT</h3>
+          <p class="card-desc">Selecciona una herramienta nativa de Linux, rellena los parámetros y copia el comando exacto para tu terminal.</p>
+          
+          <div class="dork-form">
+            <div class="input-group">
+              <label for="linux-tool">Selecciona Herramienta</label>
+              <select id="linux-tool">
+                <option value="sherlock">Sherlock (Buscador de Usuarios)</option>
+                <option value="phoneinfoga">PhoneInfoga (OSINT de Teléfonos)</option>
+                <option value="theharvester">theHarvester (E-mails, Subdominios, IPs)</option>
+                <option value="ghunt">GHunt (OSINT de Cuentas de Google)</option>
+                <option value="dnsrecon">DNSRecon (Auditoría DNS)</option>
+                <option value="socialscan">SocialScan (Comprobar Email/Username en lote)</option>
+                <option value="holehe">Holehe (Buscar email en +120 servicios y RRSS)</option>
+                <option value="nmap">Nmap (Escaneo de puertos y servicios IP)</option>
+                <option value="whois">Whois (Registro de dominio e información IP)</option>
+                <option value="whatweb">WhatWeb (Reconocimiento de tecnologías web)</option>
+                <option value="nikto">Nikto (Escáner de vulnerabilidades de servidor web)</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="linux-target">Target / Objetivo</label>
+              <input type="text" id="linux-target" placeholder="Ej. eldesructor o target.com">
+            </div>
+            <button class="btn btn-primary" id="btn-generate-linux">Generar Comando</button>
+          </div>
+
+          <div class="dork-preview-box" id="linux-preview-box" style="display: none;">
+            <h4>Comando de Instalación y Ejecución:</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <strong style="font-size: 0.85rem; color: var(--text-secondary);">Comando de instalación recomendado:</strong>
+              <code class="dork-code" id="linux-install-code" style="color: var(--text-secondary);"></code>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+              <strong style="font-size: 0.85rem; color: var(--cyan-color);">Comando de ejecución generado:</strong>
+              <code class="dork-code" id="linux-run-code"></code>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+              <button class="btn btn-secondary" id="btn-copy-linux-install">
+                <i class="fa-solid fa-copy"></i> Copiar Instalación
+              </button>
+              <button class="btn btn-primary" id="btn-copy-linux-run">
+                <i class="fa-solid fa-copy"></i> Copiar Comando
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Web Audit Tab -->
+      <section id="webaudit-tab" class="tab-panel">
+        <div class="glass-card search-card">
+          <div class="search-group">
+            <i class="fa-solid fa-shield-halved search-icon"></i>
+            <input type="text" id="webaudit-input" placeholder="ejemplo.com o https://ejemplo.com">
+            <button class="btn btn-primary" id="btn-webaudit"><i class="fa-solid fa-radar"></i> Analizar</button>
+          </div>
+        </div>
+
+        <div id="webaudit-results" style="display:none;">
+          <!-- Fila superior: Resumen + SSL -->
+          <div class="grid-2col">
+            <div class="glass-card" id="webaudit-overview">
+              <h3><i class="fa-solid fa-circle-info"></i> Resumen General</h3>
+              <div class="info-list" id="webaudit-overview-list"></div>
+            </div>
+            <div class="glass-card" id="webaudit-ssl-card">
+              <h3><i class="fa-solid fa-lock"></i> Certificado SSL / TLS</h3>
+              <div class="info-list" id="webaudit-ssl-list"></div>
+            </div>
+          </div>
+
+          <!-- Seguridad Mozilla Observatory -->
+          <div class="glass-card margin-top">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <h3><i class="fa-solid fa-shield-virus"></i> Cabeceras de Seguridad HTTP</h3>
+              <div id="webaudit-score-badge" style="font-size:2rem;font-weight:800;"></div>
+            </div>
+            <p class="card-desc" id="webaudit-score-desc">Análisis via Mozilla Observatory</p>
+            <div id="webaudit-headers-list" style="display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem;"></div>
+          </div>
+
+          <!-- Tecnologías -->
+          <div class="glass-card margin-top">
+            <h3><i class="fa-solid fa-microchip"></i> Tecnologías Detectadas</h3>
+            <div id="webaudit-tech-grid" class="links-grid" style="margin-top:1rem;"></div>
+            <p id="webaudit-tech-empty" style="color:var(--text-muted);font-size:0.9rem;display:none;">No se detectaron tecnologías conocidas.</p>
+          </div>
+
+          <!-- Subdominios -->
+          <div class="glass-card margin-top">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+              <h3><i class="fa-solid fa-sitemap"></i> Subdominios (crt.sh)</h3>
+              <span id="webaudit-sub-count" class="badge badge-success" style="display:none;"></span>
+            </div>
+            <div id="webaudit-subdomains-list" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:1rem;max-height:300px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Escaneo de Puertos -->
+          <div class="glass-card margin-top" id="webaudit-ports-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+              <h3><i class="fa-solid fa-network-wired"></i> Escaneo de Puertos Comunes</h3>
+              <span id="webaudit-ports-count" style="display:none;"></span>
+            </div>
+            <p class="card-desc">Comprueba qué puertos responden en el servidor (TCP, 2s timeout por puerto). Puertos marcados en rojo representan posibles vectores de ataque.</p>
+            <div id="webaudit-ports-list" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:1rem;"></div>
+          </div>
+
+          <!-- Herramientas externas -->
+          <div class="glass-card margin-top">
+            <h3><i class="fa-solid fa-toolbox"></i> Escáneres Externos Avanzados</h3>
+            <p class="card-desc">Herramientas de terceros para análisis más profundo (puertos, malware, reputación):</p>
+            <div class="links-grid" id="webaudit-external-links" style="margin-top:1rem;"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Dorks / Recon Tab -->
+      <section id="dorks-tab" class="tab-panel">
+        <div class="glass-card search-card">
+          <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
+            <div class="input-group" style="flex:2;min-width:200px;">
+              <label for="dork-target">Dominio objetivo</label>
+              <input type="text" id="dork-target" placeholder="ejemplo.com">
+            </div>
+            <div class="input-group" style="flex:2;min-width:200px;">
+              <label for="dork-type">Tipo de búsqueda</label>
+              <select id="dork-type">
+                <option value="subdomains">Subdominios (crt.sh)</option>
+                <option value="admin-panels">Paneles de Administración / Login</option>
+                <option value="config-files">Archivos de Configuración expuestos (.env, etc.)</option>
+                <option value="directory-listing">Directorios abiertos (Index Of)</option>
+                <option value="public-docs">Documentos públicos indexados</option>
+                <option value="database-leaks">Bases de datos expuestas (.sql, .db)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btn-generate-dork" style="height:46px;white-space:nowrap;">
+              <i class="fa-solid fa-magnifying-glass"></i> Buscar
+            </button>
+          </div>
+        </div>
+
+        <!-- Results aparecer aquí -->
+        <div id="dork-results-area" style="margin-top:1.5rem;"></div>
+
+        <!-- Dork query + copy (solo visible para tipos Google) -->
+        <div class="dork-preview-box" id="dork-preview-box" style="display:none;">
+          <h4>Consulta Generada:</h4>
+          <code class="dork-code" id="dork-code"></code>
+          <button class="btn btn-secondary" id="btn-copy-dork">
+            <i class="fa-solid fa-copy"></i> Copiar Consulta
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner-container">
+      <div class="cyber-spinner"></div>
+      <p id="loading-text">Escaneando bases de datos de OSINT...</p>
+    </div>
+  </div>
+
+  <!-- Core script and global spinner functions -->
+  <script src="js/app.js"></script>
+
+  <!-- Modular feature scripts loaded sequentially -->
+  <script src="js/modules/usernames.js"></script>
+  <script src="js/modules/email.js"></script>
+  <script src="js/modules/domain.js"></script>
+  <script src="js/modules/phone.js"></script>
+  <script src="js/modules/names.js"></script>
+  <script src="js/modules/exif.js"></script>
+  <script src="js/modules/email_header.js"></script>
+  <script src="js/modules/pdf.js"></script>
+  <script src="js/modules/linux.js"></script>
+  <script src="js/modules/dorks.js"></script>
+  <script src="js/modules/webanalyzer.js"></script>
+</body>
+</html>

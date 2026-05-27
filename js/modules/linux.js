@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnGenerateLinux.addEventListener('click', () => {
       const target = linuxTarget.value.trim();
       if (!target) {
-        alert("Por favor introduce un target (usuario, dominio, email o teléfono).");
+        window.showToast("Por favor introduce un target (usuario, dominio, email o teléfono).", "warning");
         return;
       }
 

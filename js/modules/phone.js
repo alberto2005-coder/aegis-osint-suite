@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnScanPhone.addEventListener('click', () => {
       const phone = phoneInput.value.trim();
       if (!phone) {
-        alert('Por favor introduce un número de teléfono (ej: +34 600000000).');
+        window.showToast('Por favor introduce un número de teléfono (ej: +34 600000000).', 'warning');
         return;
       }
 

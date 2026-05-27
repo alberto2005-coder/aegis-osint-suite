@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── MAIN ──────────────────────────────────────────────────
   btnSearch.addEventListener('click', async () => {
     let raw = inputTarget.value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
-    if (!raw) { alert('Introduce un dominio (ej: ejemplo.com).'); return; }
+    if (!raw) { window.showToast('Introduce un dominio (ej: ejemplo.com).', 'warning'); return; }
     const domain  = raw.replace(/^www\./i, '');
     const baseUrl = `https://${domain}`;
     const type    = selectType.value;

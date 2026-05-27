@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const rawHeaders = headerInput.value.trim();
         if (!rawHeaders) {
-          alert('Por favor pega las cabeceras del correo.');
+          window.showToast('Por favor pega las cabeceras del correo.', 'warning');
           return;
         }
 
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         console.error("Error al analizar cabeceras de correo:", err);
         window.hideLoader();
-        alert("Ocurrió un error al procesar las cabeceras del correo.");
+        window.showToast("Ocurrió un error al procesar las cabeceras del correo.", "error");
       }
     });
   }

@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const apiKey = groqKeyInput.value.trim();
       
       if (!exifImageInput.files || exifImageInput.files.length === 0) {
-        alert("Por favor sube una imagen primero.");
+        window.showToast("Por favor sube una imagen primero.", "warning");
         return;
       }
 
@@ -376,17 +376,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await response.json();
 
           if (data.error) {
-            alert(`Error: ${data.error.message}`);
+            window.showToast(`Error: ${data.error.message}`, "error");
           } else if (data.choices && data.choices[0]) {
             // Render markdown content using marked.js
             exifGroqResponse.innerHTML = marked.parse(data.choices[0].message.content);
             exifGroqResults.style.display = 'block';
           } else {
-            alert("No se recibió respuesta válida.");
+            window.showToast("No se recibió respuesta válida.", "warning");
           }
         } catch (err) {
           console.error(err);
-          alert(apiKey ? "Error de conexión con la API de Groq." : "Error de conexión con proxy.php. Asegúrate de ejecutar la app en un entorno web con soporte PHP.");
+          window.showToast(apiKey ? "Error de conexión con la API de Groq." : "Error de conexión con proxy.php. Asegúrate de ejecutar la app en un entorno web con soporte PHP.", "error");
         } finally {
           window.hideLoader();
         }

@@ -186,13 +186,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btnScanUsername.addEventListener('click', async () => {
       const username = usernameInput.value.trim();
       if (!username) {
-        alert('Por favor introduce un nombre de usuario.');
+        window.showToast('Por favor introduce un nombre de usuario.', 'warning');
         return;
       }
 
       // Validación sintáctica en frontend (mismos criterios que el backend)
       if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) {
-        alert('El nombre de usuario contiene caracteres no válidos. Solo se permiten letras, números, guiones, guiones bajos y puntos.');
+        window.showToast('El nombre de usuario contiene caracteres no válidos. Solo se permiten letras, números, guiones, guiones bajos y puntos.', 'error');
         return;
       }
 

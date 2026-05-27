@@ -171,15 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const algo = algoEl.value; 
 
     if (isImage && !loadedImageSrc) {
-      alert("Por favor, carga una imagen portadora primero.");
+      window.showToast("Por favor, carga una imagen portadora primero.", "warning");
       return;
     }
     if (!isImage && !text) {
-      alert("Por favor, introduce el mensaje de entrada.");
+      window.showToast("Por favor, introduce el mensaje de entrada.", "warning");
       return;
     }
     if (!key) {
-      alert("Por favor, introduce la clave secreta.");
+      window.showToast("Por favor, introduce la clave secreta.", "warning");
       return;
     }
 
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
           stegoPreview.src = encodedImageSrc;
           btnStegoDownload.style.display = 'block';
           outputEl.value = encryptedText; // También mostrar texto cifrado
-          alert("¡Mensaje cifrado e insertado en la imagen con éxito! Puedes descargar la imagen portadora ahora.");
+          window.showToast("¡Mensaje cifrado e insertado en la imagen con éxito! Puedes descargar la imagen portadora ahora.", "success");
         } else {
           outputEl.value = encryptedText;
         }

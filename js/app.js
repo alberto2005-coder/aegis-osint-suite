@@ -252,4 +252,59 @@ document.addEventListener('DOMContentLoaded', () => {
   window.isTorActive = () => {
     return globalTorCheckbox ? globalTorCheckbox.checked : false;
   };
+
+  // --- SISTEMA DE NOTIFICACIONES TOAST PREMIUM ---
+  let toastContainer = document.querySelector('.toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container';
+    document.body.appendChild(toastContainer);
+  }
+
+  window.showToast = (message, type = 'error') => {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let icon = 'fa-circle-info';
+    let iconColor = 'var(--cyan-color)';
+    if (type === 'success') {
+      icon = 'fa-circle-check';
+      iconColor = 'var(--success-color)';
+    } else if (type === 'error') {
+      icon = 'fa-circle-xmark';
+      iconColor = 'var(--error-color)';
+    } else if (type === 'warning') {
+      icon = 'fa-triangle-exclamation';
+      iconColor = 'var(--warning-color)';
+    }
+    
+    toast.innerHTML = `
+      <i class="fa-solid ${icon}" style="font-size: 1.15rem; color: ${iconColor}; flex-shrink: 0;"></i>
+      <span style="font-size: 0.88rem; font-weight: 500; line-height: 1.4; color: var(--text-primary);">${message}</span>
+      <button class="toast-close"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 10);
+    
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    });
+    
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          if (toast.parentNode) toast.remove();
+        }, 300);
+      }
+    }, 6000);
+  };
 });

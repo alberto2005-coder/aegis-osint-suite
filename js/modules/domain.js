@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnScanDomain.addEventListener('click', async () => {
       const target = domainInput.value.trim();
       if (!target) {
-        alert('Por favor introduce un dominio o dirección IP válida.');
+        window.showToast('Por favor introduce un dominio o dirección IP válida.', 'warning');
         return;
       }
 

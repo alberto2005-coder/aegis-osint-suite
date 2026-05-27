@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lastName = lastnameInput.value.trim();
 
       if (!firstName && !lastName) {
-        alert('Por favor, introduce al menos un nombre o apellido.');
+        window.showToast('Por favor, introduce al menos un nombre o apellido.', 'warning');
         return;
       }
 

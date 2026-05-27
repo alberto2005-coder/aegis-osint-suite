@@ -11,13 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btnScanEmail.addEventListener('click', async () => {
       const email = emailInput.value.trim();
       if (!email) {
-        alert('Por favor introduce un correo válido.');
+        window.showToast('Por favor introduce un correo válido.', 'warning');
         return;
       }
 
       const parts = email.split('@');
       if (parts.length !== 2) {
-        alert('Formato de correo inválido.');
+        window.showToast('Formato de correo inválido.', 'error');
         return;
       }
 

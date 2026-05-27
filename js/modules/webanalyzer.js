@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── main handler ──────────────────────────────────────────
   btnAudit.addEventListener('click', async () => {
     let raw = auditInput.value.trim();
-    if (!raw) { alert('Introduce un dominio o URL.'); return; }
+    if (!raw) { window.showToast('Introduce un dominio o URL.', 'warning'); return; }
 
     // Normalize domain
     raw = raw.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/^www\./i, '');

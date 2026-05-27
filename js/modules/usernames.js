@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const statFound = document.getElementById('stat-found');
   const statErrors = document.getElementById('stat-errors');
 
+  // Recuperar proxy guardado
+  const customProxyInput = document.getElementById('username-custom-proxy');
+  if (customProxyInput) {
+    customProxyInput.value = localStorage.getItem('username_custom_proxy') || '';
+  }
+
   // ── CONFIGURACIÓN DE PLATAFORMAS ──────────────────────────────────────────
   const PLATFORMS = [
     // Social
@@ -209,7 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // 2. Iniciar conexión SSE con el backend de Sherlock
-      const eventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}`);
+      const useTor = document.getElementById('username-use-tor')?.checked ? 'true' : 'false';
+      const customProxy = customProxyInput ? customProxyInput.value.trim() : '';
+      if (customProxyInput) {
+        localStorage.setItem('username_custom_proxy', customProxy);
+      }
+      const eventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}&useTor=${useTor}&proxy=${encodeURIComponent(customProxy)}`);
 
       eventSource.onmessage = (event) => {
         try {

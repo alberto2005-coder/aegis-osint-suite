@@ -93,6 +93,9 @@ function getSSLCert(host) {
 // ── ENDPOINT: /api/sherlock (Server-Sent Events) ───────────
 app.get('/api/sherlock', (req, res) => {
   const username = req.query.username;
+  const useTor = req.query.useTor === 'true';
+  const customProxy = req.query.proxy || '';
+
   if (!username) return res.status(400).json({ error: 'Username es requerido' });
 
   // Validar username básico para evitar inyección de comandos
@@ -106,15 +109,23 @@ app.get('/api/sherlock', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  console.log(`[Sherlock Node] Iniciando escaneo de: ${username}`);
+  console.log(`[Sherlock Node] Iniciando escaneo de: ${username} (Usando Tor: ${useTor}, Proxy: ${customProxy || 'Ninguno'})`);
 
-  // Intentamos ejecutar el comando "sherlock" global
+  const args = ['/usr/src/sherlock/sherlock/sherlock.py', username, '--timeout', '5', '--print-found'];
+  if (customProxy) {
+    args.push('--proxy', customProxy);
+  } else if (useTor) {
+    args.push('--proxy', 'socks5://127.0.0.1:9050');
+  }
+
   let sherlockProcess;
   try {
-    sherlockProcess = spawn('sherlock', [username, '--timeout', '5', '--print-found']);
-  } catch (e) {
-    console.warn("Comando sherlock directo no disponible, intentando con python3...");
-    sherlockProcess = spawn('python3', ['/usr/src/sherlock/sherlock', username, '--timeout', '5', '--print-found']);
+    sherlockProcess = spawn('python3', args);
+  } catch (err) {
+    console.error("Fallo al iniciar el proceso de Sherlock:", err);
+    res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
+    res.end();
+    return;
   }
 
   sherlockProcess.stdout.on('data', (data) => {
@@ -145,32 +156,9 @@ app.get('/api/sherlock', (req, res) => {
   });
 
   sherlockProcess.on('error', (err) => {
-    console.error("Error al arrancar Sherlock, intentando con python3 directo...", err);
-    try {
-      const fallback = spawn('python3', ['/usr/src/sherlock/sherlock/sherlock.py', username, '--timeout', '5', '--print-found']);
-      fallback.stdout.on('data', (data) => {
-        const output = data.toString();
-        const lines = output.split('\n');
-        for (const line of lines) {
-          const cleanLine = line.trim();
-          if (cleanLine.startsWith('[+]')) {
-            const match = cleanLine.match(/^\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
-            if (match) {
-              const platform = match[1].trim();
-              const url = match[2].trim();
-              res.write(`data: ${JSON.stringify({ status: 'found', platform, url })}\n\n`);
-            }
-          }
-        }
-      });
-      fallback.on('close', () => {
-        res.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
-        res.end();
-      });
-    } catch (fallbackErr) {
-      res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
-      res.end();
-    }
+    console.error("Error en ejecución del proceso de Sherlock:", err);
+    res.write(`data: ${JSON.stringify({ status: 'error', message: err.message })}\n\n`);
+    res.end();
   });
 });
 

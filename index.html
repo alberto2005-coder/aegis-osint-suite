@@ -163,6 +163,19 @@
               <i class="fa-solid fa-radar-chart"></i> Escanear
             </button>
           </div>
+          <!-- Opción de Red Tor / Proxy personalizado -->
+          <div class="search-options" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.6rem; color: var(--text-color);">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" id="username-use-tor" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary-color);">
+              <label for="username-use-tor" style="cursor: pointer; user-select: none; font-size: 0.9rem;">
+                Usar red Tor (🧅) <small style="color: #888; margin-left: 0.25rem;">(Evita bloqueo de IP pero es lento y algunas redes lo rechazan)</small>
+              </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <label for="username-custom-proxy" style="font-size: 0.9rem; min-width: 150px;">O usar proxy limpio/nuevo:</label>
+              <input type="text" id="username-custom-proxy" placeholder="ej: http://user:pass@host:port o socks5://host:port" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; flex-grow: 1; min-width: 250px; outline: none;">
+            </div>
+          </div>
           <!-- Filtro por categorías -->
           <div class="category-chips-row" id="username-category-chips" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);"></div>
         </div>

@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ssl: proxyData?.ssl || null,
       scoreValue: (obs && typeof obs.score === 'number') ? obs.score : (proxyData?.securityScore ?? null),
       grade: obs?.grade || null,
-      headers: (obs && obs.tests) 
+      headers: (obs && obs.grade)
         ? Object.entries({
             content_security_policy: 'Content-Security-Policy (CSP)',
             strict_transport_security: 'HSTS (Strict-Transport-Security)',

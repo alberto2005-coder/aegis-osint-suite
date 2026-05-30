@@ -4,5 +4,6 @@ proxies_cache.txt
 .env
 .gemini/
 *cache*
+!middleware/cache.js
 package-lock.json
 FUTURE_IMPLEMENTATIONS.md

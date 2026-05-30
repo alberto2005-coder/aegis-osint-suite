@@ -66,6 +66,11 @@ async function validateTargetHost(host) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Endpoint de ping para healthcheck y keep-alive
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
 // Configurar Tor agent (SOCKS5 local)
 const torAgent = new SocksProxyAgent('socks://127.0.0.1:9050');
 

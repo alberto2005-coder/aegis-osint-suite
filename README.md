@@ -38,12 +38,12 @@ La suite se compone de módulos independientes accesibles desde la barra de nave
 * **OSINT Telefonico**: Formateo y validación de números móviles, indicando el operador y país asignado.
 * **Nombres y Rostros**: Enlaces directos a motores de búsqueda estructurada e identificación facial inversa.
 * **Metadatos EXIF**: Extracción de información interna de fotos (marca de cámara, modelo, fecha, coordenadas GPS en mapa) y descarga de copias sin metadatos.
-* **Analizador de Cabeceras de Correo**: Detección de servidores SMTP intermedios, validación SPF/DKIM, mapa de la trayectoria mundial del mensaje y representación en una línea de tiempo vertical de saltos.
+* **Analizador de Cabeceras de Correo**: Detección de servidores SMTP intermedios, validación SPF/DKIM, mapa de la trayectoria mundial del mensaje y representación en una línea de tiempo vertical.
 * **Reportes PDF**: Generación y exportación instantánea de reportes en PDF para Sherlock, metadatos EXIF y auditoría web.
 * **Comandos Linux**: Referencia rápida de comandos útiles en sistemas operativos UNIX para tareas forenses.
 * **Google Dorks**: Asistente para construir consultas de indexación de Google avanzadas (logins, bases de datos expuestas, ficheros de configuración).
 * **Auditoría Web**: Fingerprint de tecnologías de desarrollo, listado de subdominios, análisis SSL con días restantes, calificación de cabeceras HTTP y escáner de puertos.
-* **Crypto Box & Esteganografia (LSB)**: Cifrado simétrico de texto (AES-GCM, RC4, XOR, Vigenère) e incrustación de mensajes cifrados en píxeles de imágenes PNG, permitiendo descifrarlos únicamente al subir la imagen portadora con su respectivo método y contraseña.
+* **Crypto Box & Esteganografia (LSB)**: Cifrado simétrico de texto (AES-GCM, RC4, XOR, Vigenère) e incrustación de mensajes cifrados en píxeles de imágenes PNG, permitiendo descifrarlos únicamente con la clave adecuada.
 
 ---
 
@@ -96,7 +96,7 @@ Conecta tu repositorio de GitHub y define las siguientes variables:
 * **Entorno**: Node.js
 * **Build Command**: `npm install`
 * **Start Command**: `npm start`
-* **Nota**: Si tu proveedor soporta despliegues con Docker, selecciona utilizar el `Dockerfile` directamente para asegurar que las dependencias de Python y el servicio de Tor arranquen de forma correcta en producción.
+* **Nota**: Si tu proveedor soporta despliegues con Docker, selecciona utilizar el `Dockerfile` directamente para asegurar que las dependencias de Python y el servicio de Tor arranquen de forma correcta.
 
 ### Servidores Virtuales (VPS Ubuntu/Debian) con PM2
 Si deseas alojar la aplicación de forma persistente en un servidor dedicado:
@@ -121,8 +121,8 @@ pm2 startup
 
 Para garantizar estabilidad operativa y evitar superar límites de memoria en servidores con recursos limitados (como las instancias gratuitas de 512MB RAM):
 
-* **Limpieza en desconexión**: El backend escucha el evento `req.on('close')`. Si el usuario interrumpe un escaneo o cierra la pestaña, el subproceso de Sherlock asociado se finaliza de inmediato (`SIGTERM`).
-* **Watchdog de Timeout**: Cada escaneo de Sherlock tiene asignado un temporizador de 120 segundos. Al expirar este plazo, el proceso hijo se termina forzosamente (`SIGKILL`) para liberar recursos de la memoria RAM del servidor.
+* **Limpieza en desconexión**: El backend escucha el evento `req.on('close')`. Si el usuario interrumpe un escaneo o cierra la pestaña, el subproceso de Sherlock asociado se finaliza de inmediato.
+* **Watchdog de Timeout**: Cada escaneo de Sherlock tiene asignado un temporizador de 120 segundos. Al expirar este plazo, el proceso hijo se termina forzosamente (`SIGKILL`) para liberar recursos.
 
 ---
 
@@ -136,10 +136,46 @@ Para garantizar estabilidad operativa y evitar superar límites de memoria en se
 
 ## Descargo de Responsabilidad
 
-Este proyecto ha sido desarrollado con fines exclusivamente educativos, de aprendizaje y de auditoría de seguridad personal (autorizada). El uso de esta herramienta para realizar actividades maliciosas, espionaje, acoso o accesos no autorizados a sistemas de terceros está estrictamente prohibido y puede ser constitutivo de delito penal. 
+Este proyecto ha sido desarrollado con fines exclusivamente educativos, de aprendizaje y de auditoría de seguridad personal (autorizada). El uso de esta herramienta para realizar actividades maliciosas, invasivas o ilegales queda prohibido.
 
 El creador de esta herramienta no se hace responsable del uso indebido, ilegal o negligente que terceras personas puedan hacer de este software. La responsabilidad recae única y exclusivamente sobre el usuario final.
 
-
 Este proyecto está bajo la **Licencia Personalizada de Alberto Ortiz**.
 Consulta el archivo `LICENSE` para más detalles.
+
+---
+
+# English Version
+
+## Overview
+
+**Aegis OSINT Suite** is a full-featured intelligence platform for open-source research, metadata forensics, web audits, and cryptographic/steganographic analysis.
+
+## Main capabilities
+
+- User lookup and social profile discovery across public services
+- Email, domain, and IP intelligence
+- Web and OSINT data collection and reporting
+- Metadata extraction from images and PDF documents
+- Encryption and steganography utilities
+- Docker-based local deployment
+
+## Local installation
+
+```bash
+git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
+cd aegis-osint-suite
+npm install
+npm start
+```
+
+Then open `http://localhost:3000` in the browser.
+
+## Docker
+
+```bash
+docker build -t aegis-osint .
+docker run -d -p 3000:3000 --name aegis aegis-osint
+```
+
+This README keeps the Spanish version first and adds the English summary below for wider accessibility.

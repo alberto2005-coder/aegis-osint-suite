@@ -140,7 +140,7 @@ Este proyecto ha sido desarrollado con fines exclusivamente educativos, de apren
 
 El creador de esta herramienta no se hace responsable del uso indebido, ilegal o negligente que terceras personas puedan hacer de este software. La responsabilidad recae única y exclusivamente sobre el usuario final.
 
-Este proyecto está bajo la **Licencia Personalizada de Alberto Ortiz**.
+Este proyecto está bajo la **Licencia GPL-3.0**.
 Consulta el archivo `LICENSE` para más detalles.
 
 ---

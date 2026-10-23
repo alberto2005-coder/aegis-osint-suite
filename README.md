@@ -50,7 +50,7 @@ La suite se compone de módulos independientes accesibles desde la barra de nave
 ## Instalacion Local
 
 ### Requisitos
-* Node.js (v18+)
+* Node.js (v22.13+ / recomendado v24 LTS)
 * Python 3 (requerido únicamente para el rastreo de Sherlock en local)
 
 ### Ejecucion de comandos

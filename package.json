@@ -24,7 +24,7 @@
     "socks-proxy-agent": "^8.0.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.13.0"
   },
   "devDependencies": {
     "eslint": "^10.4.1",

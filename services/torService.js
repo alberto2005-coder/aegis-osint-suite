@@ -1,7 +1,7 @@
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const net = require('net');
 
-const TOR_URL = 'socks://127.0.0.1:9050';
+const TOR_URL = 'socks5h://127.0.0.1:9050';
 const torAgent = new SocksProxyAgent(TOR_URL);
 
 /**

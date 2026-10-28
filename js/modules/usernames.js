@@ -235,7 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('username_custom_proxy', customProxy);
       }
       let isFinished = false;
-      currentEventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}&useTor=${useTor}&proxy=${encodeURIComponent(customProxy)}`);
+      const engineSelect = document.getElementById('username-engine');
+      const engine = engineSelect ? engineSelect.value : 'maigret';
+      currentEventSource = new EventSource(`/api/sherlock?username=${encodeURIComponent(username)}&useTor=${useTor}&proxy=${encodeURIComponent(customProxy)}&engine=${encodeURIComponent(engine)}`);
 
       currentEventSource.onmessage = (event) => {
         try {

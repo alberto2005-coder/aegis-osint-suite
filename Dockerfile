@@ -6,8 +6,8 @@ FROM node:24-alpine
 RUN apk add --no-cache tor python3 py3-pip && \
     addgroup -S aegis && adduser -S aegis -G aegis
 
-# Instalar Sherlock globalmente
-RUN python3 -m pip install --no-cache-dir --break-system-packages sherlock-project
+# Instalar Sherlock + Maigret globalmente
+RUN python3 -m pip install --no-cache-dir --break-system-packages sherlock-project maigret
 
 # Configurar Tor (SocksPort local + directorio de datos escribible por el usuario de la app)
 RUN mkdir -p /var/lib/tor && \

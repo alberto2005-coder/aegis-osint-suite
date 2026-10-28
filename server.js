@@ -10,6 +10,8 @@ const logger = require('./utils/logger');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 // Healthcheck/Keep-Alive endpoint
 app.get('/ping', (req, res) => {
   res.status(200).send('pong');

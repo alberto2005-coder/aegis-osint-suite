@@ -8,12 +8,12 @@ const { spawn } = require('child_process');
  */
 function runSherlockProcess(username, options = {}) {
   const { useTor, customProxy } = options;
-  const args = [username, '--timeout', '5', '--print-all', '--no-color'];
-  
+  const args = [username, '--timeout', '4', '--print-all', '--no-color'];
+
   if (customProxy) {
     args.push('--proxy', customProxy);
   } else if (useTor) {
-    args.push('--proxy', 'socks5://127.0.0.1:9050');
+    args.push('--proxy', 'socks5h://127.0.0.1:9050');
   }
 
   return {

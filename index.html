@@ -182,8 +182,16 @@
               <i class="fa-solid fa-ban"></i> Detener
             </button>
           </div>
-          <!-- Opción de Red Tor / Proxy personalizado -->
+          <!-- Opción de Motor / Red Tor / Proxy personalizado -->
           <div class="search-options" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.6rem; color: var(--text-color);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <label for="username-engine" style="font-size: 0.9rem; min-width: 150px;">Motor de búsqueda:</label>
+              <select id="username-engine" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.9rem;">
+                <option value="sherlock">Sherlock (Clásico)</option>
+                <option value="maigret" selected>Maigret (Recomendado desde IPs de datacenter)</option>
+              </select>
+              <small style="color: #888;">Maigret suele dar mejores resultados desde servidores cloud</small>
+            </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <input type="checkbox" id="username-use-tor" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary-color);">
               <label for="username-use-tor" style="cursor: pointer; user-select: none; font-size: 0.9rem;">
@@ -636,23 +644,56 @@
       <section id="linux-tab" class="tab-panel">
         <div class="glass-card">
           <h3><i class="fa-brands fa-linux"></i> Cheat Sheet & Generador de Comandos OSINT</h3>
-          <p class="card-desc">Selecciona una herramienta nativa de Linux, rellena los parámetros y copia el comando exacto para tu terminal.</p>
+          <p class="card-desc">Selecciona una herramienta, rellena los parámetros y copia el comando exacto para tu terminal. <strong>Usa ÚNICAMENTE sobre objetivos con autorización expresa.</strong></p>
           
           <div class="dork-form">
             <div class="input-group">
               <label for="linux-tool">Selecciona Herramienta</label>
-              <select id="linux-tool">
-                <option value="sherlock">Sherlock (Buscador de Usuarios)</option>
-                <option value="phoneinfoga">PhoneInfoga (OSINT de Teléfonos)</option>
-                <option value="theharvester">theHarvester (E-mails, Subdominios, IPs)</option>
-                <option value="ghunt">GHunt (OSINT de Cuentas de Google)</option>
-                <option value="dnsrecon">DNSRecon (Auditoría DNS)</option>
-                <option value="socialscan">SocialScan (Comprobar Email/Username en lote)</option>
-                <option value="holehe">Holehe (Buscar email en +120 servicios y RRSS)</option>
-                <option value="nmap">Nmap (Escaneo de puertos y servicios IP)</option>
-                <option value="whois">Whois (Registro de dominio e información IP)</option>
-                <option value="whatweb">WhatWeb (Reconocimiento de tecnologías web)</option>
-                <option value="nikto">Nikto (Escáner de vulnerabilidades de servidor web)</option>
+                            <select id="linux-tool">
+                <optgroup label="Pentesting Web Ético (Recon/Crawling)">
+                  <option value="gospider">gospider (Crawling + JS)</option>
+                  <option value="hakrawler">hakrawler (Crawling rápido)</option>
+                  <option value="subjs">subjs (Endpoints desde archivos JS)</option>
+                  <option value="linkfinder">LinkFinder (Rutas desde JS estático)</option>
+                </optgroup>
+                <optgroup label="OSINT Usuarios/Emails">
+                  <option value="sherlock">Sherlock (Buscador de Usuarios)</option>
+                  <option value="phoneinfoga">PhoneInfoga (OSINT de Teléfonos)</option>
+                  <option value="theharvester">theHarvester (Emails, Subdominios, IPs)</option>
+                  <option value="ghunt">GHunt (Cuentas Google)</option>
+                  <option value="socialscan">SocialScan (Comprobar Email/Usuario)</option>
+                  <option value="holehe">Holehe (Email en servicios/RRSS)</option>
+                </optgroup>
+                <optgroup label="Subdominios / Assets">
+                  <option value="subfinder">Subfinder (Pasivo)</option>
+                  <option value="assetfinder">Assetfinder (Descubrimiento rápido)</option>
+                  <option value="findomain">Findomain (Pasivo/Activo)</option>
+                  <option value="amass">Amass (Footprinting pasivo)</option>
+                </optgroup>
+                <optgroup label="Web Recon / HTTP">
+                  <option value="httpx">httpx (Hosts vivos + tech)</option>
+                  <option value="httprobe">httprobe (Probar HTTP/HTTPS)</option>
+                  <option value="whatweb">WhatWeb (Tecnologías web)</option>
+                </optgroup>
+                <optgroup label="Escaneo / Fuzzing">
+                  <option value="nmap">Nmap (Puertos/Servicios)</option>
+                  <option value="naabu">Naabu (Escaneo rápido de puertos)</option>
+                  <option value="ffuf">ffuf (Fuzzing directorios/archivos)</option>
+                  <option value="feroxbuster">Feroxbuster (Fuzzing recursivo)</option>
+                  <option value="gobuster">Gobuster (Fuzzing clásico)</option>
+                  <option value="katana">Katana (Crawler moderno)</option>
+                  <option value="nikto">Nikto (Auditoría web básica)</option>
+                  <option value="nuclei">Nuclei (Plantillas - SOLO con autorización)</option>
+                </optgroup>
+                <optgroup label="URLs Históricas / DNS / Info">
+                  <option value="gau">gau (URLs históricas)</option>
+                  <option value="waybackurls">waybackurls (Wayback Machine)</option>
+                  <option value="dnsrecon">DNSRecon (Registros DNS)</option>
+                  <option value="dnsx">dnsx (Resolución masiva DNS)</option>
+                  <option value="puredns">puredns (Resolución/validación)</option>
+                  <option value="whois">Whois (WHOIS/IP/DOM)</option>
+                  <option value="uncover">uncover (Shodan/Censys/FOFA)</option>
+                </optgroup>
               </select>
             </div>
             <div class="input-group">
@@ -894,6 +935,33 @@
     </main>
   </div>
 
+  <!-- LEGAL DISCLAIMER MODAL -->
+  <div id="legal-disclaimer-modal" class="legal-modal">
+    <div class="legal-modal-backdrop"></div>
+    <div class="legal-modal-content">
+      <div class="legal-modal-header">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <h2>AVISO LEGAL - DESCARGO DE RESPONSABILIDAD</h2>
+      </div>
+      <div class="legal-modal-body">
+        <p><strong>Aegis OSINT Suite</strong> ha sido desarrollado con fines exclusivamente <strong>educativos, de investigación OSINT y de auditoría de seguridad autorizada</strong>.</p>
+        <ul>
+          <li>Únicamente deberás utilizar esta herramienta sobre <strong>sistemas propios</strong> o sobre aquellos para los que tengas <strong>autorización explícita y por escrito</strong> del propietario.</li>
+          <li>Queda estrictamente prohibido utilizarla para escaneos, reconocimientos, pruebas o cualquier otra acción sin permiso expreso del titular del sistema.</li>
+          <li>Está <strong>terminantemente prohibido</strong> utilizar esta herramienta para ataques, denegación de servicio (DoS/DDoS), intrusión, explotación maliciosa o cualquier actividad ilegal.</li>
+          <li>El autor de este proyecto <strong>NO se hace responsable</strong> del uso indebido, negligente, ilícito o fraudulento que terceros puedan hacer del mismo.</li>
+          <li>El <strong>usuario final asume toda la responsabilidad legal, civil y penal</strong> derivada del uso que haga de Aegis OSINT Suite.</li>
+        </ul>
+        <p class="legal-warning">AL HACER CLIC EN "ACEPTO Y ENTIENDO", DECLARAS QUE HAS LEÍDO, COMPRENDIDO Y ACEPTAS ESTOS TÉRMINOS COMPROMETIÉNDOTE A UN USO ÉTICO, RESPONSABLE Y LEGAL.</p>
+      </div>
+      <div class="legal-modal-footer">
+        <button id="btn-accept-legal" class="btn btn-primary">
+          <i class="fa-solid fa-check"></i> Acepto y entiendo
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loading-overlay">
     <div class="spinner-container">
@@ -902,6 +970,8 @@
     </div>
   </div>
 
+  <!-- Legal Disclaimer -->
+  <script src="js/modules/legal-disclaimer.js"></script>
   <!-- Core script and global spinner functions -->
   <script src="js/utils/api.js"></script>
   <script src="js/app.js"></script>

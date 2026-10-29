@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 
 function runMaigretProcess(username, options = {}) {
   const { useTor, customProxy } = options;
-  const args = [username, '--timeout', '10', '--no-color', '--print-found', '--no-progressbar', '--disable-color'];
+  const args = [username, '--timeout', '10', '--no-color', '--no-progressbar'];
 
   if (customProxy) {
     args.push('--proxy', customProxy);

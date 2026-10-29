@@ -830,6 +830,7 @@ select {
   font-size: 0.9rem;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color-scheme: dark;
 }
 
 select:hover {
@@ -840,6 +841,13 @@ select:focus {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+select optgroup {
+  background-color: #131a2e;
+  color: #9ca3af;
+  font-style: normal;
+  font-weight: 600;
 }
 
 select option {

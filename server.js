@@ -48,14 +48,14 @@ app.use(cors({
   credentials: true
 }));
 
-const globalLimiter = rateLimit({
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Máximo 100 peticiones
+  max: 200, // Máximo 200 peticiones a la API por IP
   message: { error: 'Demasiadas peticiones desde esta IP, por favor inténtalo de nuevo más tarde.' },
   standardHeaders: true,
   legacyHeaders: false
 });
-app.use(globalLimiter);
+app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));

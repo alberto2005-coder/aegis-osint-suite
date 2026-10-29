@@ -5,6 +5,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabTitle = document.getElementById('tab-title');
   const tabSubtitle = document.getElementById('tab-subtitle');
 
+  // Mobile menu
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+  const sidebar = document.querySelector('.sidebar');
+
+  const closeMobileMenu = () => {
+    sidebar?.classList.remove('mobile-open');
+    mobileSidebarOverlay?.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+
+  mobileMenuBtn?.addEventListener('click', () => {
+    sidebar?.classList.add('mobile-open');
+    mobileSidebarOverlay?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+
+  mobileSidebarOverlay?.addEventListener('click', closeMobileMenu);
+
+  navItems.forEach(item => {
+    item.addEventListener('click', closeMobileMenu);
+  });
+
   const tabMeta = {
     'username-tab': {
       title: 'Buscador de Usuarios (Sherlock)',

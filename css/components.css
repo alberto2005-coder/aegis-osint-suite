@@ -274,6 +274,12 @@
   gap: 1.5rem;
 }
 
+@media (max-width: 968px) {
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
 .margin-top {
   margin-top: 1.5rem;
 }

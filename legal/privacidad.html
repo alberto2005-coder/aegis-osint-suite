@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidad | Aegis OSINT Suite</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    body { overflow: auto; height: auto; }
+    .legal-page { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem; display: flex; flex-direction: column; gap: 2rem; }
+    .legal-header { text-align: center; }
+    .legal-header h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 0.5rem; }
+    .legal-header p { color: var(--text-secondary); }
+    .legal-card { display: flex; flex-direction: column; gap: 1rem; }
+    .legal-card h2 { color: var(--cyan-color); }
+    .legal-card p, .legal-card li { color: var(--text-secondary); line-height: 1.8; }
+    .legal-card ul { display: flex; flex-direction: column; gap: 0.8rem; padding-left: 1.5rem; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--cyan-color); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main class="legal-page">
+    <header class="legal-header">
+      <a class="back-link" href="../index.html"><i class="fa-solid fa-arrow-left"></i> Volver a Aegis OSINT Suite</a>
+      <h1>Política de Privacidad</h1>
+      <p>Última actualización: Octubre 2026</p>
+    </header>
+    <section class="glass-card legal-card">
+      <h2>1. Principio general</h2>
+      <p><strong>Aegis OSINT Suite</strong> se compromete con la privacidad. Esta herramienta no requiere registro y no solicita datos personales identificativos.</p>
+    </section>
+    <section class="glass-card legal-card">
+      <h2>2. Datos almacenados en el navegador</h2>
+      <p>Únicamente se utilizan las siguientes claves en <code>localStorage</code> del propio navegador:</p>
+      <ul>
+        <li><code>aegis_legal_accept_v1</code> - Aceptación del descargo de responsabilidad.</li>
+        <li><code>aegis_tor_enabled</code> - Preferencia de enrutado Tor.</li>
+        <li><code>aegis_osint_history</code> - Historial local de búsquedas recientes (solo en tu dispositivo).</li>
+      </ul>
+      <p>Estos datos <strong>nunca se envían a terceros</strong> y permanecen únicamente en el equipo del usuario.</p>
+    </section>
+    <section class="glass-card legal-card">
+      <h2>3. Logs del servidor</h2>
+      <p>Por motivos de seguridad y prevención de abusos, el servidor puede registrar direcciones IP de forma temporal para aplicar el <em>rate-limit</em>. Estos registros no se utilizan con fines publicitarios ni de perfilado.</p>
+    </section>
+    <section class="glass-card legal-card">
+      <h2>4. Cookies</h2>
+      <p>Esta web <strong>no utiliza cookies de terceros</strong>. No se emplean herramientas de analítica, seguimiento publicitario ni marketing.</p>
+    </section>
+    <section class="glass-card legal-card">
+      <h2>5. Derechos</h2>
+      <p>Al tratarse de datos exclusivamente locales, el usuario puede eliminarlos en cualquier momento borrando los datos del sitio desde su navegador.</p>
+    </section>
+    <section class="glass-card legal-card">
+      <h2>6. Contacto</h2>
+      <p>Para cualquier consulta relacionada con esta política, se puede revisar el repositorio del proyecto.</p>
+    </section>
+  </main>
+</body>
+</html>

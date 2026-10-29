@@ -819,3 +819,31 @@ input:checked + .tor-slider:before {
   display: none !important;
 }
 
+/* Dark Theme Selects */
+select {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+select:hover {
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+select option {
+  background-color: #0b1020;
+  color: var(--text-primary);
+}
+

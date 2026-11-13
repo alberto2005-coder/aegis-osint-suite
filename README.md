@@ -1,166 +1,62 @@
 # Aegis OSINT Suite
 
-Plataforma de inteligencia de fuentes abiertas (OSINT), análisis forense de metadatos y herramientas de criptografía/esteganografía en tiempo real.
+[![Node.js](https://img.shields.io/badge/Node.js-22.13%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-API-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![Docker](https://img.shields.io/badge/Docker-listado-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![GPL-3.0](https://img.shields.io/badge/Licencia-GPL--3.0-blue)](LICENSE)
 
-![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=flat-square&logo=javascript&logoColor=%23F7DF1E)
-![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat-square&logo=node.js&logoColor=white)
-![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=flat-square&logo=express&logoColor=%2361DAFB)
-![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54)
-![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat-square&logo=docker&logoColor=white)
-![Tor](https://img.shields.io/badge/Tor_Project-7D4698?style=flat-square&logo=Tor-Project&logoColor=white)
+[Español](#español) · [English](#english)
 
 ---
 
-## Indice
-- [Aegis OSINT Suite](#aegis-osint-suite)
-  - [Indice](#indice)
-  - [Caracteristicas](#caracteristicas)
-  - [Instalacion Local](#instalacion-local)
-    - [Requisitos](#requisitos)
-    - [Ejecucion de comandos](#ejecucion-de-comandos)
-  - [Uso con Docker](#uso-con-docker)
-  - [Despliegue en la Nube](#despliegue-en-la-nube)
-    - [PaaS (Railway, Render, Fly.io, Heroku)](#paas-railway-render-flyio-heroku)
-    - [Servidores Virtuales (VPS Ubuntu/Debian) con PM2](#servidores-virtuales-vps-ubuntudebian-con-pm2)
-  - [Gestion de Recursos](#gestion-de-recursos)
-  - [Stack Tecnologico](#stack-tecnologico)
-  - [Descargo de Responsabilidad](#descargo-de-responsabilidad)
+## Español
 
----
+### Índice
 
-## Caracteristicas
+- [Descripción](#descripción)
+- [Módulos](#módulos)
+- [Demo](#demo)
+- [Requisitos](#requisitos)
+- [Instalación local](#instalación-local)
+- [Docker](#docker)
+- [Despliegue en la nube](#despliegue-en-la-nube)
+- [Gestión de recursos](#gestión-de-recursos)
+- [Stack tecnológico](#stack-tecnológico)
+- [Uso responsable](#uso-responsable)
+- [Licencia](#licencia)
 
-La suite se compone de módulos independientes accesibles desde la barra de navegación lateral:
+### Descripción
 
-* **Buscador de Usuarios (Sherlock)**: Rastreo de perfiles en paralelo sobre cientos de servicios de internet. Soporta proxies y enrutado opcional a través de Tor.
-* **Auditoría de Correos**: Consulta de reputación de direcciones de email y presencia en filtraciones de datos públicas (Breaches).
-* **Dominios e IPs**: Resolución DNS (A, MX, NS) y geolocalización física del hosting dibujada en un mapa interactivo.
-* **OSINT Telefonico**: Formateo y validación de números móviles, indicando el operador y país asignado.
-* **Nombres y Rostros**: Enlaces directos a motores de búsqueda estructurada e identificación facial inversa.
-* **Metadatos EXIF**: Extracción de información interna de fotos (marca de cámara, modelo, fecha, coordenadas GPS en mapa) y descarga de copias sin metadatos.
-* **Analizador de Cabeceras de Correo**: Detección de servidores SMTP intermedios, validación SPF/DKIM, mapa de la trayectoria mundial del mensaje y representación en una línea de tiempo vertical.
-* **Reportes PDF**: Generación y exportación instantánea de reportes en PDF para Sherlock, metadatos EXIF y auditoría web.
-* **Comandos Linux**: Referencia rápida de comandos útiles en sistemas operativos UNIX para tareas forenses.
-* **Google Dorks**: Asistente para construir consultas de indexación de Google avanzadas (logins, bases de datos expuestas, ficheros de configuración).
-* **Auditoría Web**: Fingerprint de tecnologías de desarrollo, listado de subdominios, análisis SSL con días restantes, calificación de cabeceras HTTP y escáner de puertos.
-* **Crypto Box & Esteganografia (LSB)**: Cifrado simétrico de texto (AES-GCM, RC4, XOR, Vigenère) e incrustación de mensajes cifrados en píxeles de imágenes PNG, permitiendo descifrarlos únicamente con la clave adecuada.
+**Aegis OSINT Suite** reúne en una sola interfaz varias herramientas de **inteligencia de fuentes abiertas (OSINT)**, análisis de metadatos, auditoría web y criptografía/esteganografía. Cada función es un módulo independiente accesible desde la barra lateral.
 
----
+### Módulos
 
-## Instalacion Local
+- **Buscador de usuarios (Sherlock)**: rastreo en paralelo por cientos de servicios, con proxies y enrutado opcional por Tor.
+- **Auditoría de correos**: reputación y presencia en filtraciones públicas.
+- **Dominios e IPs**: DNS (A, MX, NS) y geolocalización del hosting en un mapa.
+- **OSINT telefónico**: validación y formato de números, operador y país.
+- **Nombres y rostros**: enlaces a motores de búsqueda estructurada.
+- **Metadatos EXIF**: cámara, fecha, GPS y descarga de copias sin metadatos.
+- **Cabeceras de correo**: servidores intermedios, SPF/DKIM, ruta y cronología.
+- **Informes PDF** de Sherlock, EXIF y auditoría web.
+- **Comandos Linux** de referencia forense.
+- **Google Dorks** para construir consultas avanzadas.
+- **Auditoría web**: tecnologías, subdominios, SSL, cabeceras HTTP y puertos.
+- **Crypto Box y esteganografía LSB**: AES-GCM, RC4, XOR y Vigenère, con ocultación de mensajes en PNG.
+- **Geolocalización asistida por IA**: análisis de una foto con un modelo de visión de Groq para estimar el lugar (requiere clave de Groq).
+
+### Demo
+
+**Instancia pública:** <https://aegis-osint-suite.onrender.com/>
 
 ### Requisitos
-* Node.js (v22.13+ / recomendado v24 LTS)
-* Python 3 (requerido únicamente para el rastreo de Sherlock en local)
 
-### Ejecucion de comandos
-1. Clona el repositorio e ingresa a la carpeta:
-   ```bash
-   git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
-   cd aegis-osint-suite
-   ```
-2. Instala las dependencias necesarias:
-   ```bash
-   npm install
-   ```
-3. Arranca la aplicación local:
-   ```bash
-   npm start
-   ```
-4. Navega a `http://localhost:3000` en tu explorador.
+- **Node.js 22.13+** (recomendado 24 LTS).
+- **Python 3** solo para el rastreo de Sherlock en local.
+- **Docker** (opcional).
+- **Tor** (opcional, para enrutar consultas).
 
----
-
-## Uso con Docker
-
-El proyecto incluye un entorno preconfigurado dentro de un contenedor Alpine Linux con el demonio de Tor y la instalación de Sherlock lista.
-
-1. Construye la imagen de contenedor:
-   ```bash
-   docker build -t aegis-osint .
-   ```
-2. Inicia el contenedor exponiendo el puerto de red:
-   ```bash
-   docker run -d -p 3000:3000 --name aegis aegis-osint
-   ```
-3. Accede a `http://localhost:3000`. Las consultas de red que utilicen Tor serán enrutadas internamente en el contenedor de forma automática.
-
----
-
-## Despliegue en la Nube
-
-La aplicación escucha dinámicamente en el puerto indicado por la variable de entorno `PORT` (`process.env.PORT || 3000`).
-
-### PaaS (Railway, Render, Fly.io, Heroku)
-Conecta tu repositorio de GitHub y define las siguientes variables:
-* **Entorno**: Node.js
-* **Build Command**: `npm install`
-* **Start Command**: `npm start`
-* **Nota**: Si tu proveedor soporta despliegues con Docker, selecciona utilizar el `Dockerfile` directamente para asegurar que las dependencias de Python y el servicio de Tor arranquen de forma correcta.
-
-### Servidores Virtuales (VPS Ubuntu/Debian) con PM2
-Si deseas alojar la aplicación de forma persistente en un servidor dedicado:
-```bash
-# Instalacion de software
-sudo apt update && sudo apt install -y nodejs npm python3 python3-pip tor
-sudo npm install -g pm2
-python3 -m pip install sherlock-project
-
-# Despliegue e inicio de servicio
-git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
-cd aegis-osint-suite
-npm install
-pm2 start server.js --name "aegis"
-pm2 save
-pm2 startup
-```
-
----
-
-## Gestion de Recursos
-
-Para garantizar estabilidad operativa y evitar superar límites de memoria en servidores con recursos limitados (como las instancias gratuitas de 512MB RAM):
-
-* **Limpieza en desconexión**: El backend escucha el evento `req.on('close')`. Si el usuario interrumpe un escaneo o cierra la pestaña, el subproceso de Sherlock asociado se finaliza de inmediato.
-* **Watchdog de Timeout**: Cada escaneo de Sherlock tiene asignado un temporizador de 120 segundos. Al expirar este plazo, el proceso hijo se termina forzosamente (`SIGKILL`) para liberar recursos.
-
----
-
-## Stack Tecnologico
-
-* **Front-End**: HTML5 / CSS3 (diseño glassmorphism responsivo), JavaScript Vanilla, Leaflet.js (mapeado de geolocalización), jsPDF (generación de informes).
-* **Back-End**: Node.js, Express, Axios.
-* **Criptografia**: Web Crypto API (SubtleCrypto para AES-GCM), Canvas API (lectura/escritura de canales RGB para esteganografía LSB).
-
----
-
-## Descargo de Responsabilidad
-
-Este proyecto ha sido desarrollado con fines exclusivamente educativos, de aprendizaje y de auditoría de seguridad personal (autorizada). El uso de esta herramienta para realizar actividades maliciosas, invasivas o ilegales queda prohibido.
-
-El creador de esta herramienta no se hace responsable del uso indebido, ilegal o negligente que terceras personas puedan hacer de este software. La responsabilidad recae única y exclusivamente sobre el usuario final.
-
-Este proyecto está bajo la **Licencia GPL-3.0**.
-Consulta el archivo `LICENSE` para más detalles.
-
----
-
-# English Version
-
-## Overview
-
-**Aegis OSINT Suite** is a full-featured intelligence platform for open-source research, metadata forensics, web audits, and cryptographic/steganographic analysis.
-
-## Main capabilities
-
-- User lookup and social profile discovery across public services
-- Email, domain, and IP intelligence
-- Web and OSINT data collection and reporting
-- Metadata extraction from images and PDF documents
-- Encryption and steganography utilities
-- Docker-based local deployment
-
-## Local installation
+### Instalación local
 
 ```bash
 git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
@@ -169,13 +65,186 @@ npm install
 npm start
 ```
 
-Then open `http://localhost:3000` in the browser.
+Abre <http://localhost:3000>.
 
-## Docker
+Para usar la geolocalización por IA, define `GROQ_API_KEY` en el entorno o envía la clave desde la interfaz.
+
+### Docker
+
+La imagen incluye Alpine Linux, el demonio de Tor y Sherlock:
 
 ```bash
 docker build -t aegis-osint .
 docker run -d -p 3000:3000 --name aegis aegis-osint
 ```
 
-This README keeps the Spanish version first and adds the English summary below for wider accessibility.
+### Despliegue en la nube
+
+La aplicación escucha en `process.env.PORT || 3000`.
+
+**PaaS (Railway, Render, Fly.io, Heroku)**
+
+- Entorno: Node.js.
+- Build: `npm install`.
+- Start: `npm start`.
+- Si el proveedor admite Docker, usa el `Dockerfile` para que Python y Tor estén disponibles.
+
+**VPS Ubuntu/Debian con PM2**
+
+```bash
+sudo apt update && sudo apt install -y nodejs npm python3 python3-pip tor
+sudo npm install -g pm2
+python3 -m pip install sherlock-project
+
+git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
+cd aegis-osint-suite
+npm install
+pm2 start server.js --name "aegis"
+pm2 save
+pm2 startup
+```
+
+### Gestión de recursos
+
+- **Limpieza al desconectar**: el backend escucha `req.on('close')` y termina el subproceso de Sherlock si el usuario cierra la pestaña o cancela.
+- **Watchdog de 120 s**: cada escaneo tiene un temporizador que mata el proceso hijo con `SIGKILL` si se pasa del tiempo.
+
+Esto evita agotar la memoria en instancias pequeñas (por ejemplo, 512 MB).
+
+### Stack tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | HTML5, CSS3 con glassmorphism, JavaScript vanilla, Leaflet, jsPDF |
+| Backend | Node.js, Express, Axios |
+| Criptografía | Web Crypto API (AES-GCM) y Canvas API (LSB) |
+| Contenedores | Docker con Alpine, Tor y Sherlock |
+
+### Uso responsable
+
+La suite está pensada para **educación, aprendizaje y auditoría autorizada**. No la uses para acosar, vigilar o investigar a terceros sin consentimiento ni base legal. El usuario es el único responsable del uso que haga de estas herramientas y de cumplir la ley de su país, incluido el RGPD cuando aplique.
+
+### Licencia
+
+**GNU General Public License v3.0 (GPL-3.0)** — consulta [LICENSE](LICENSE).
+
+---
+
+## English
+
+### Table of contents
+
+- [Overview](#overview)
+- [Modules](#modules)
+- [Demo](#demo)
+- [Requirements](#requirements)
+- [Local installation](#local-installation)
+- [Docker](#docker)
+- [Cloud deployment](#cloud-deployment)
+- [Resource management](#resource-management)
+- [Tech stack](#tech-stack)
+- [Responsible use](#responsible-use)
+- [License](#license)
+
+### Overview
+
+**Aegis OSINT Suite** brings together several **open-source intelligence (OSINT)** tools, metadata forensics, web auditing and cryptography/steganography in one interface. Each capability is an independent module reachable from the sidebar.
+
+### Modules
+
+- **User lookup (Sherlock)**: parallel search across hundreds of services, with proxies and optional Tor routing.
+- **Email audit**: reputation and presence in public breaches.
+- **Domains and IPs**: DNS (A, MX, NS) and hosting geolocation on a map.
+- **Phone OSINT**: number validation and formatting, carrier and country.
+- **Names and faces**: links to structured search engines.
+- **EXIF metadata**: camera, date, GPS and stripped-copy downloads.
+- **Email headers**: relay servers, SPF/DKIM, route and timeline.
+- **PDF reports** for Sherlock, EXIF and web audits.
+- **Linux commands** as a forensics reference.
+- **Google Dorks** to build advanced queries.
+- **Web audit**: technologies, subdomains, SSL, HTTP headers and ports.
+- **Crypto Box and LSB steganography**: AES-GCM, RC4, XOR and Vigenère, hiding messages in PNG files.
+- **AI-assisted geolocation**: analyses a photo with a Groq vision model to estimate the location (requires a Groq key).
+
+### Demo
+
+**Public instance:** <https://aegis-osint-suite.onrender.com/>
+
+### Requirements
+
+- **Node.js 22.13+** (24 LTS recommended).
+- **Python 3** only for local Sherlock scans.
+- **Docker** (optional).
+- **Tor** (optional, for routed queries).
+
+### Local installation
+
+```bash
+git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
+cd aegis-osint-suite
+npm install
+npm start
+```
+
+Open <http://localhost:3000>.
+
+For AI geolocation, set `GROQ_API_KEY` in the environment or provide the key from the UI.
+
+### Docker
+
+The image bundles Alpine Linux, the Tor daemon and Sherlock:
+
+```bash
+docker build -t aegis-osint .
+docker run -d -p 3000:3000 --name aegis aegis-osint
+```
+
+### Cloud deployment
+
+The app listens on `process.env.PORT || 3000`.
+
+**PaaS (Railway, Render, Fly.io, Heroku)**
+
+- Environment: Node.js.
+- Build: `npm install`.
+- Start: `npm start`.
+- If the provider supports Docker, use the `Dockerfile` so Python and Tor are available.
+
+**Ubuntu/Debian VPS with PM2**
+
+```bash
+sudo apt update && sudo apt install -y nodejs npm python3 python3-pip tor
+sudo npm install -g pm2
+python3 -m pip install sherlock-project
+
+git clone https://github.com/alberto2005-coder/aegis-osint-suite.git
+cd aegis-osint-suite
+npm install
+pm2 start server.js --name "aegis"
+pm2 save
+pm2 startup
+```
+
+### Resource management
+
+- **Cleanup on disconnect**: the backend listens to `req.on('close')` and kills the Sherlock subprocess if the user closes the tab or cancels.
+- **120 s watchdog**: every scan has a timer that kills the child process with `SIGKILL` once it expires.
+
+This prevents memory exhaustion on small instances (for example, 512 MB).
+
+### Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | HTML5, glassmorphism CSS3, vanilla JavaScript, Leaflet, jsPDF |
+| Backend | Node.js, Express, Axios |
+| Cryptography | Web Crypto API (AES-GCM) and Canvas API (LSB) |
+| Containers | Docker with Alpine, Tor and Sherlock |
+
+### Responsible use
+
+The suite is meant for **education, learning and authorised auditing**. Do not use it to harass, monitor or investigate third parties without consent or a legal basis. You are solely responsible for your use of these tools and for complying with your country's law, including the GDPR where it applies.
+
+### License
+
+**GNU General Public License v3.0 (GPL-3.0)** — see [LICENSE](LICENSE).
